@@ -10,7 +10,6 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"encoding/pem"
-	"fmt"
 	"github.com/astaxie/beego"
 	"github.com/astaxie/beego/context"
 	"io/ioutil"
@@ -31,7 +30,7 @@ type validate struct {
 //获取公钥
 var PubKey *rsa.PublicKey
 func init()  {
-	p,err:=ioutil.ReadFile("/root/projectMod/apiserver/conf/cert.pem")
+	p,err:=ioutil.ReadFile("./conf/cert.pem")
 	if err != nil {
 		panic("can not get pubkey: "+err.Error())
 	}
@@ -56,7 +55,6 @@ var UserFilter beego.FilterFunc =   func (ctx *context.Context){
 		FilterResError(ctx,"Datahash error")
 	}
 	now:=time.Now().Unix()
-	fmt.Println(v.TimeStamp,now)
 	if v.TimeStamp>now || now>v.TimeStamp+timeOut{
 		panic("Time validate out")
 	}
