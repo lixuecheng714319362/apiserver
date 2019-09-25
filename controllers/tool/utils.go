@@ -89,10 +89,9 @@ func ChangeArgs(Args []string) (arg [][]byte) {
 	}
 	return arg
 }
-
+var LogLevel string
 func HanddlerError(c beego.Controller) {
-	if true {
-		beego.Informational("level not debug")
+	if LogLevel=="debug"{
 		return
 	}
 	e := recover()

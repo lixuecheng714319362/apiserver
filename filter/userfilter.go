@@ -17,7 +17,7 @@ import (
 	"time"
 )
 const(
-	timeOut = 60
+	timeOut = 30
 )
 
 type validate struct {
@@ -55,8 +55,9 @@ var UserFilter beego.FilterFunc =   func (ctx *context.Context){
 		FilterResError(ctx,"Datahash error")
 	}
 	now:=time.Now().Unix()
-	if v.TimeStamp>now || now>v.TimeStamp+timeOut{
-		panic("Time validate out")
+	beego.Debug("now:",now , "timestamp:",v.TimeStamp ,"outtime",v.TimeStamp+timeOut)
+	if !(now>v.TimeStamp-timeOut &&  now < v.TimeStamp+timeOut){
+		FilterResError(ctx,"Time validate out")
 	}
 	sign ,_:=base64.StdEncoding.DecodeString(v.Sign)
 	hashed:=sha256.Sum256([]byte(v.DataHash+strconv.FormatInt(v.TimeStamp,10)))

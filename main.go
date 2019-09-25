@@ -1,14 +1,17 @@
 package main
 
 import (
+	"apiserver/controllers/tool"
 	"apiserver/filter"
 	_ "apiserver/routers"
 	"github.com/astaxie/beego"
 )
 
+
+
 func main() {
-	level:=beego.AppConfig.String("loglevel")
-	switch level {
+	tool.LogLevel=beego.AppConfig.String("loglevel")
+	switch tool.LogLevel {
 	case "error":
 		beego.SetLevel(beego.LevelError)
 	case "info":
