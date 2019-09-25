@@ -6,10 +6,14 @@ import (
 	"apiserver/models/gosdk/tool/blockdata"
 	"encoding/base64"
 	"encoding/json"
+	"fmt"
 	"github.com/astaxie/beego"
+	"github.com/golang/protobuf/proto"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/msp"
+	"github.com/hyperledger/fabric/common/tools/protolator"
 	"net/http"
+	"reflect"
 )
 
 type LedgerController struct {
@@ -34,6 +38,12 @@ type ReqData struct {
 
 func getReq(c *LedgerController) (*ReqData,error)  {
 	data := c.Ctx.Input.RequestBody
+	//测试接口使用
+	if beego.AppConfig.String("filter")=="false"{
+		r:=&ReqData{}
+		_=json.Unmarshal(data,r)
+		return r,nil
+	}
 	req := &Request{}
 	err := json.Unmarshal(data, req)
 	if err != nil {
@@ -314,6 +324,28 @@ func (c *LedgerController) QueryBlockByNumbertest() {
 		tool.BackResError(c.Controller, http.StatusBadRequest, err.Error())
 		return
 	}
+
+
+	// 将或取的区块信息全部解析成json字符串
+	bt,err:=proto.Marshal(res)
+	if err != nil {
+		fmt.Println("marshal error " ,err)
+	}
+	msgType:=proto.MessageType("common.Block")
+	msg := reflect.New(msgType.Elem()).Interface().(proto.Message)
+	err =proto.Unmarshal(bt,msg)
+	if err != nil {
+		fmt.Println("Unmarshal  error",err)
+	}
+	err = protolator.DeepMarshalJSON(c.Controller.Ctx.ResponseWriter, msg)
+	if err != nil {
+		fmt.Println("Deep Marshal Json error",err)
+	}
+
+
+
+
+
 	b, err := blockdata.Getinfo(res)
 	if err != nil {
 		beego.Error("get block info err", err)

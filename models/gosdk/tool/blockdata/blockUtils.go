@@ -20,6 +20,7 @@ type Block struct {
 	Header            *BlockHead
 	TransactionNumber int
 	Transaction       []*Transaction
+	TransactionsFilter		[]uint8
 }
 
 type BlockHead struct {
@@ -109,13 +110,19 @@ type ChainBlock struct {
 
 func Getinfo(thisBlock *common.Block) (*Block, error) {
 
+	var txFilter []uint8
+	if thisBlock.Metadata!=nil && len(thisBlock.Metadata.Metadata)>=2{
+		txFilter=thisBlock.Metadata.Metadata[2]
+	}
 	newBlock := &Block{
 		Header: &BlockHead{
 			Number:       thisBlock.Header.Number,
 			DataHash:     thisBlock.Header.DataHash,
 			PreviousHash: thisBlock.Header.PreviousHash,
+
 		},
 		TransactionNumber: len(thisBlock.Data.Data),
+		TransactionsFilter: txFilter,
 	}
 
 	//此处应该遍历block.Data.Data

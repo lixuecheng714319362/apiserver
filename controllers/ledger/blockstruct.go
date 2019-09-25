@@ -9,6 +9,10 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 )
 
+const(
+	invalid=404
+)
+
 type Block struct {
 	Number            uint64
 	CurrentBlockHash  []byte
@@ -26,6 +30,7 @@ type Transaction struct {
 	ChannelId string
 	TxId      string
 	Actions   []*Action
+	TransactionFilter int
 }
 type Action struct {
 	CCID          string
@@ -47,10 +52,9 @@ func Getinfo(thisBlock *common.Block) (*Block, error) {
 		DataHash:          b.Header.DataHash,
 		TransactionNumber: b.TransactionNumber,
 	}
+	filterNum:=len(b.TransactionsFilter)
 
-
-
-	for _, v := range b.Transaction {
+	for n, v := range b.Transaction {
 		t := &Transaction{
 			CreatorMSPID:v.Header.SignatureHeader.Creator.MSPID,
 			CreateID: LoadCertBytes(v.Header.SignatureHeader.Creator.IdBytes),
@@ -59,6 +63,11 @@ func Getinfo(thisBlock *common.Block) (*Block, error) {
 			Nanos:     v.Header.ChannelHeader.Nanos,
 			TxId:      v.Header.ChannelHeader.TxId,
 			ChannelId: v.Header.ChannelHeader.ChannelId,
+		}
+		if filterNum>n{
+			t.TransactionFilter=int(b.TransactionsFilter[n])
+		}else {
+			t.TransactionFilter=invalid
 		}
 
 		if v.Header.ChannelHeader.Type == "CONFIG" {
@@ -91,7 +100,7 @@ func Getinfo(thisBlock *common.Block) (*Block, error) {
 	return block, nil
 
 }
-func LoadCertBytes(original []byte) (string) {
+func LoadCertBytes(original []byte) string {
 	certDerBlock,_:=pem.Decode(original)
 	if certDerBlock ==nil{
 		return ""
