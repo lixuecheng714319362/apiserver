@@ -76,7 +76,7 @@ func (c *LedgerController) QueryInfo() {
 		tool.BackResError(c.Controller, http.StatusBadRequest, err.Error())
 		return
 	}
-	beego.Info(res.Status, res.BCI.Height, base64.StdEncoding.EncodeToString(res.BCI.CurrentBlockHash))
+	beego.Info("query channel info  status:",res.Status,"block:", res.BCI.Height, "current block hash:",base64.StdEncoding.EncodeToString(res.BCI.CurrentBlockHash))
 	tool.BackResData(c.Controller, res.BCI)
 	return
 }
@@ -119,7 +119,7 @@ func (c *LedgerController) QueryConfig() {
 		MSPs:        res.MSPs(),
 		AnchorPeers: res.AnchorPeers(),
 	}
-	beego.Info(res.ID(), res.BlockNumber())
+	beego.Info("query channel config","channel id is ",res.ID())
 	tool.BackResData(c.Controller, channelcfg)
 	return
 }
@@ -150,8 +150,6 @@ func (c *LedgerController) QueryBlockByHash() {
 		tool.BackResError(c.Controller, http.StatusBadRequest, err.Error())
 		return
 	}
-	beego.Info(res.Header.Number)
-
 	b, err := Getinfo(res)
 	if err != nil {
 		beego.Error("get block info err", err)
@@ -184,7 +182,6 @@ func (c *LedgerController) QueryBlockByTxID() {
 		tool.BackResError(c.Controller, http.StatusBadRequest, err.Error())
 		return
 	}
-	beego.Info(res.Header.Number)
 	b, err := Getinfo(res)
 	if err != nil {
 		beego.Error("get block info err", err)
@@ -228,7 +225,7 @@ func (c *LedgerController) QueryBlockByNumber() {
 		tool.BackResError(c.Controller, http.StatusBadRequest, err.Error())
 		return
 	}
-	beego.Info(res.Header.Number)
+	beego.Info("query block info ,block number is",res.Header.Number)
 	hash, err := getBlockHashBynumber(LedgerClient, req.BlockNumber)
 	if err != nil {
 		beego.Error("get current hash failed ", err)
@@ -282,7 +279,7 @@ func (c *LedgerController) QueryBlockByRange() {
 		return
 	}
 	res[end-start].CurrentBlockHash = hash
-	beego.Info("query block range ",req.Start,req.End)
+	beego.Info("query block range  from",req.Start,"to",req.End)
 	tool.BackResData(c.Controller, res)
 	return
 }
@@ -352,7 +349,7 @@ func (c *LedgerController) QueryBlockByNumbertest() {
 		tool.BackResError(c.Controller, http.StatusBadRequest, err.Error())
 		return
 	}
-	beego.Info(res.Header.Number)
+	beego.Info("query block info ,block number is",res.Header.Number)
 	hash, err := getBlockHashBynumber(LedgerClient, req.BlockNumber)
 	if err != nil {
 		beego.Error("get current hash failed ", err)
