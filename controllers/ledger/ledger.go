@@ -6,14 +6,13 @@ import (
 	"apiserver/models/gosdk/tool/blockdata"
 	"encoding/base64"
 	"encoding/json"
-	"fmt"
+	"errors"
 	"github.com/astaxie/beego"
-	"github.com/golang/protobuf/proto"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/msp"
-	"github.com/hyperledger/fabric/common/tools/protolator"
 	"net/http"
-	"reflect"
+	"sync"
+	"time"
 )
 
 type LedgerController struct {
@@ -237,6 +236,7 @@ func (c *LedgerController) QueryBlockByNumber() {
 	return
 }
 func (c *LedgerController) QueryBlockByRange() {
+	beego.Debug("start queryblockrange",time.Now().Unix())
 	defer tool.HanddlerError(c.Controller)
 	req,err:=getReq(c)
 	if err != nil {
@@ -251,38 +251,80 @@ func (c *LedgerController) QueryBlockByRange() {
 		return
 	}
 	defer LedgerClient.CloseSDK()
-	start := req.Start
-	end := req.End
-	var res []*Block
-	for i := start; i <= end; i++ {
-		b, err := LedgerClient.QueryBlockByNumber(i)
-		if err != nil {
-			beego.Error("query block  failed ", err)
-			tool.BackResError(c.Controller, http.StatusBadRequest, err.Error())
-			return
-		}
-		block, err := Getinfo(b)
-		if err != nil {
-			beego.Error("create resClient failed ", err)
-			tool.BackResError(c.Controller, http.StatusBadRequest, err.Error())
-			return
-		}
-		if i != start {
-			res[i-start-1].CurrentBlockHash = block.PreviousHash
-		}
-		res = append(res, block)
-	}
-	hash, err := getBlockHashBynumber(LedgerClient, end)
+
+
+	res,err:=getBlockbyRange(req.Start,req.End,LedgerClient)
 	if err != nil {
-		beego.Error("get blockhash by number failed ", err)
+		beego.Error("get block by range failed ", err)
 		tool.BackResError(c.Controller, http.StatusBadRequest, err.Error())
 		return
 	}
-	res[end-start].CurrentBlockHash = hash
+
+
 	beego.Info("query block range  from",req.Start,"to",req.End)
 	tool.BackResData(c.Controller, res)
+	beego.Debug("end queryblockrange",time.Now().Unix())
 	return
 }
+
+func getBlockbyRange(start uint64,end uint64,LedgerClient *gosdk.LedgerClient)([]*Block,error){
+	beego.Debug("start getblockrange",time.Now().Unix())
+	var res =make([]*Block,end-start+1)
+	var wg sync.WaitGroup
+
+	flag := true
+	for i := start; i <= end; i++ {
+		wg.Add(1)
+		go func(i uint64) {
+
+
+			for k:=0;;k++ {
+				b, err := LedgerClient.QueryBlockByNumber(i)
+				if err!=nil{
+					if k>3{
+						flag=false
+						break
+					}else {
+						continue
+					}
+
+				}
+				block, err := Getinfo(b)
+				if err != nil {
+					flag=false
+					break
+				}
+				res[i-start]=block
+				break
+			}
+			wg.Done()
+
+
+		}(i)
+	}
+	wg.Wait()
+
+	if flag==false{
+		return nil,errors.New("get block error")
+	}
+	hash, err := getBlockHashBynumber(LedgerClient, end)
+	if err != nil {
+		return nil,err
+	}
+	for k, v := range res {
+		if k==int(end-start){
+			v.CurrentBlockHash=hash
+		}else {
+			v.CurrentBlockHash=res[k+1].PreviousHash
+		}
+	}
+	res[end-start].CurrentBlockHash = hash
+	beego.Debug("end getblockrange",time.Now().Unix())
+
+	return res,err
+
+}
+
 
 func getBlockHashBynumber(client *gosdk.LedgerClient, number uint64) ([]byte, error) {
 	info, err := client.QueryInfo()
@@ -322,22 +364,22 @@ func (c *LedgerController) QueryBlockByNumbertest() {
 		return
 	}
 
-
-	// 将或取的区块信息全部解析成json字符串
-	bt,err:=proto.Marshal(res)
-	if err != nil {
-		fmt.Println("marshal error " ,err)
-	}
-	msgType:=proto.MessageType("common.Block")
-	msg := reflect.New(msgType.Elem()).Interface().(proto.Message)
-	err =proto.Unmarshal(bt,msg)
-	if err != nil {
-		fmt.Println("Unmarshal  error",err)
-	}
-	err = protolator.DeepMarshalJSON(c.Controller.Ctx.ResponseWriter, msg)
-	if err != nil {
-		fmt.Println("Deep Marshal Json error",err)
-	}
+	//
+	//// 将或取的区块信息全部解析成json字符串
+	//bt,err:=proto.Marshal(res)
+	//if err != nil {
+	//	fmt.Println("marshal error " ,err)
+	//}
+	//msgType:=proto.MessageType("common.Block")
+	//msg := reflect.New(msgType.Elem()).Interface().(proto.Message)
+	//err =proto.Unmarshal(bt,msg)
+	//if err != nil {
+	//	fmt.Println("Unmarshal  error",err)
+	//}
+	//err = protolator.DeepMarshalJSON(c.Controller.Ctx.ResponseWriter, msg)
+	//if err != nil {
+	//	fmt.Println("Deep Marshal Json error",err)
+	//}
 
 
 

@@ -43,6 +43,7 @@ func init()  {
 }
 //验证签名信息
 var UserFilter beego.FilterFunc =   func (ctx *context.Context){
+	beego.Debug("start userfilter",time.Now().Unix())
 	data:=ctx.Input.RequestBody
 	var v = validate{}
 	err:=json.Unmarshal(data,&v)
@@ -65,6 +66,8 @@ var UserFilter beego.FilterFunc =   func (ctx *context.Context){
 	if err != nil {
 		FilterResError(ctx,"Time validate error")
 	}
+	beego.Debug("end userfilter",time.Now().Unix())
+
 }
 //过滤错误返回
 func FilterResError(ctx *context.Context,errMsg string) {
