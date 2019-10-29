@@ -16,7 +16,7 @@
 .vscode
 #test
 apiserver
-chaincode
+chaincode/*
 main
 artifacts/
 test/

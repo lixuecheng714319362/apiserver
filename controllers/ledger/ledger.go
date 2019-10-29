@@ -23,36 +23,6 @@ type Request struct {
 }
 
 
-type ReqData struct {
-	ConfigPath  string
-	ChannelID   string
-	UserName    string //组织用户名
-	OrgName     string //组织在sdk配置文件中的标识
-	BlockHash   []byte
-	TxID        string
-	BlockNumber uint64
-	Start       uint64
-	End         uint64
-}
-
-func getReq(c *LedgerController) (*ReqData,error)  {
-	data := c.Ctx.Input.RequestBody
-	//测试接口使用
-	if beego.AppConfig.String("filter")=="false"{
-		r:=&ReqData{}
-		_=json.Unmarshal(data,r)
-		return r,nil
-	}
-	req := &Request{}
-	err := json.Unmarshal(data, req)
-	if err != nil {
-		return nil,err
-	}
-	reqData :=&ReqData{}
-	err=json.Unmarshal([]byte(req.Data), reqData)
-	return reqData,nil
-}
-
 
 func (c *LedgerController) QueryInfo() {
 	defer tool.HanddlerError(c.Controller)
@@ -62,7 +32,7 @@ func (c *LedgerController) QueryInfo() {
 		tool.BackResError(c.Controller, http.StatusForbidden, err.Error())
 		return
 	}
-	LedgerClient, err := gosdk.GetLedgerClient(req.ConfigPath, req.ChannelID, req.UserName, req.OrgName)
+	LedgerClient, err := gosdk.GetLedgerClient(req)
 	if err != nil {
 		beego.Error("create resClient failed ", err)
 		tool.BackResError(c.Controller, http.StatusBadRequest, err.Error())
@@ -75,7 +45,8 @@ func (c *LedgerController) QueryInfo() {
 		tool.BackResError(c.Controller, http.StatusBadRequest, err.Error())
 		return
 	}
-	beego.Info("query channel info  status:",res.Status,"block:", res.BCI.Height, "current block hash:",base64.StdEncoding.EncodeToString(res.BCI.CurrentBlockHash))
+	beego.Info("query channel info  status:",res.Status,"block:",
+		res.BCI.Height, "current block hash:",base64.StdEncoding.EncodeToString(res.BCI.CurrentBlockHash))
 	tool.BackResData(c.Controller, res.BCI)
 	return
 }
@@ -97,7 +68,7 @@ func (c *LedgerController) QueryConfig() {
 		tool.BackResError(c.Controller, http.StatusForbidden, err.Error())
 		return
 	}
-	LedgerClient, err := gosdk.GetLedgerClient(req.ConfigPath, req.ChannelID, req.UserName, req.OrgName)
+	LedgerClient, err := gosdk.GetLedgerClient(req)
 	if err != nil {
 		beego.Error("create resClient failed ", err)
 		tool.BackResError(c.Controller, http.StatusBadRequest, err.Error())
@@ -122,6 +93,7 @@ func (c *LedgerController) QueryConfig() {
 	tool.BackResData(c.Controller, channelcfg)
 	return
 }
+
 func (c *LedgerController) QueryBlockByHash() {
 	defer tool.HanddlerError(c.Controller)
 	req,err:=getReq(c)
@@ -130,7 +102,7 @@ func (c *LedgerController) QueryBlockByHash() {
 		tool.BackResError(c.Controller, http.StatusForbidden, err.Error())
 		return
 	}
-	LedgerClient, err := gosdk.GetLedgerClient(req.ConfigPath, req.ChannelID, req.UserName, req.OrgName)
+	LedgerClient, err := gosdk.GetLedgerClient(req)
 	if err != nil {
 		beego.Error("create resClient failed ", err)
 		tool.BackResError(c.Controller, http.StatusBadRequest, err.Error())
@@ -168,7 +140,7 @@ func (c *LedgerController) QueryBlockByTxID() {
 		tool.BackResError(c.Controller, http.StatusForbidden, err.Error())
 		return
 	}
-	LedgerClient, err := gosdk.GetLedgerClient(req.ConfigPath, req.ChannelID, req.UserName, req.OrgName)
+	LedgerClient, err := gosdk.GetLedgerClient(req)
 	if err != nil {
 		beego.Error("create resClient failed ", err)
 		tool.BackResError(c.Controller, http.StatusBadRequest, err.Error())
@@ -197,6 +169,7 @@ func (c *LedgerController) QueryBlockByTxID() {
 	tool.BackResData(c.Controller, b)
 	return
 }
+
 func (c *LedgerController) QueryBlockByNumber() {
 	defer tool.HanddlerError(c.Controller)
 	req,err:=getReq(c)
@@ -205,7 +178,7 @@ func (c *LedgerController) QueryBlockByNumber() {
 		tool.BackResError(c.Controller, http.StatusForbidden, err.Error())
 		return
 	}
-	LedgerClient, err := gosdk.GetLedgerClient(req.ConfigPath, req.ChannelID, req.UserName, req.OrgName)
+	LedgerClient, err := gosdk.GetLedgerClient(req)
 	if err != nil {
 		beego.Error("create resClient failed ", err)
 		tool.BackResError(c.Controller, http.StatusBadRequest, err.Error())
@@ -235,6 +208,7 @@ func (c *LedgerController) QueryBlockByNumber() {
 	tool.BackResData(c.Controller, b)
 	return
 }
+
 func (c *LedgerController) QueryBlockByRange() {
 	beego.Debug("start queryblockrange",time.Now().Unix())
 	defer tool.HanddlerError(c.Controller)
@@ -244,7 +218,7 @@ func (c *LedgerController) QueryBlockByRange() {
 		tool.BackResError(c.Controller, http.StatusForbidden, err.Error())
 		return
 	}
-	LedgerClient, err := gosdk.GetLedgerClient(req.ConfigPath, req.ChannelID, req.UserName, req.OrgName)
+	LedgerClient, err := gosdk.GetLedgerClient(req)
 	if err != nil {
 		beego.Error("create resClient failed ", err)
 		tool.BackResError(c.Controller, http.StatusBadRequest, err.Error())
@@ -267,17 +241,33 @@ func (c *LedgerController) QueryBlockByRange() {
 	return
 }
 
+func getReq(c *LedgerController) (*gosdk.LedgerRequest,error)  {
+	data := c.Ctx.Input.RequestBody
+	//测试接口使用
+	if beego.AppConfig.String("filter")=="false"{
+		r:=&gosdk.LedgerRequest{}
+		_=json.Unmarshal(data,r)
+		return r,nil
+	}
+	req := &Request{}
+	err := json.Unmarshal(data, req)
+	if err != nil {
+		return nil,err
+	}
+	reqData :=&gosdk.LedgerRequest{}
+	err=json.Unmarshal([]byte(req.Data), reqData)
+	return reqData,nil
+}
+
 func getBlockbyRange(start uint64,end uint64,LedgerClient *gosdk.LedgerClient)([]*Block,error){
 	beego.Debug("start getblockrange",time.Now().Unix())
 	var res =make([]*Block,end-start+1)
 	var wg sync.WaitGroup
-
+	//异步获取所有区块
 	flag := true
 	for i := start; i <= end; i++ {
 		wg.Add(1)
 		go func(i uint64) {
-
-
 			for k:=0;;k++ {
 				b, err := LedgerClient.QueryBlockByNumber(i)
 				if err!=nil{
@@ -287,7 +277,6 @@ func getBlockbyRange(start uint64,end uint64,LedgerClient *gosdk.LedgerClient)([
 					}else {
 						continue
 					}
-
 				}
 				block, err := Getinfo(b)
 				if err != nil {
@@ -298,12 +287,9 @@ func getBlockbyRange(start uint64,end uint64,LedgerClient *gosdk.LedgerClient)([
 				break
 			}
 			wg.Done()
-
-
 		}(i)
 	}
 	wg.Wait()
-
 	if flag==false{
 		return nil,errors.New("get block error")
 	}
@@ -320,9 +306,7 @@ func getBlockbyRange(start uint64,end uint64,LedgerClient *gosdk.LedgerClient)([
 	}
 	res[end-start].CurrentBlockHash = hash
 	beego.Debug("end getblockrange",time.Now().Unix())
-
 	return res,err
-
 }
 
 
@@ -342,6 +326,8 @@ func getBlockHashBynumber(client *gosdk.LedgerClient, number uint64) ([]byte, er
 	}
 	return b.Header.PreviousHash, nil
 }
+
+
 func (c *LedgerController) QueryBlockByNumbertest() {
 	defer tool.HanddlerError(c.Controller)
 	req,err:=getReq(c)
@@ -350,7 +336,7 @@ func (c *LedgerController) QueryBlockByNumbertest() {
 		tool.BackResError(c.Controller, http.StatusForbidden, err.Error())
 		return
 	}
-	LedgerClient, err := gosdk.GetLedgerClient(req.ConfigPath, req.ChannelID, req.UserName, req.OrgName)
+	LedgerClient, err := gosdk.GetLedgerClient(req)
 	if err != nil {
 		beego.Error("create resClient failed ", err)
 		tool.BackResError(c.Controller, http.StatusBadRequest, err.Error())
@@ -366,6 +352,7 @@ func (c *LedgerController) QueryBlockByNumbertest() {
 
 	//
 	//// 将或取的区块信息全部解析成json字符串
+	// TODO 必须注册所有引用的proto包参见configtxlator代码
 	//bt,err:=proto.Marshal(res)
 	//if err != nil {
 	//	fmt.Println("marshal error " ,err)
@@ -380,10 +367,6 @@ func (c *LedgerController) QueryBlockByNumbertest() {
 	//if err != nil {
 	//	fmt.Println("Deep Marshal Json error",err)
 	//}
-
-
-
-
 
 	b, err := blockdata.Getinfo(res)
 	if err != nil {

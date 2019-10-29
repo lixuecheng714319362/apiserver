@@ -17,22 +17,35 @@ type LedgerClient struct {
 	Client *ledger.Client
 }
 
+
+type LedgerRequest struct {
+	ConfigPath  string
+	ChannelID   string
+	UserName    string //组织用户名
+	OrgName     string //组织在sdk配置文件中的标识
+	BlockHash   []byte
+	TxID        string
+	BlockNumber uint64
+	Start       uint64
+	End         uint64
+}
+
 // 创建账本客户端
-func GetLedgerClient(configPath, channelID, userName, orgName string) (*LedgerClient, error) {
-	SDK, err := InitializeSDK(configPath)
+func GetLedgerClient(ledgerRequest *LedgerRequest) (*LedgerClient, error) {
+	SDK, err := InitializeSDK(ledgerRequest.ConfigPath)
 	if err != nil {
 		return nil, err
 	}
-	ledgerClient, err := ledger.New(SDK.ChannelContext(channelID, fabsdk.WithUser(userName), fabsdk.WithOrg(orgName)))
+	ledgerClient, err := ledger.New(SDK.ChannelContext(ledgerRequest.ChannelID, fabsdk.WithUser(ledgerRequest.UserName), fabsdk.WithOrg(ledgerRequest.OrgName)))
 	if err != nil {
 		SDK.Close()
 		return nil, err
 	}
 	return &LedgerClient{
-		configPath,
-		channelID,
-		userName,
-		orgName,
+		ledgerRequest.ConfigPath,
+		ledgerRequest.ChannelID,
+		ledgerRequest.UserName,
+		ledgerRequest.OrgName,
 		SDK,
 		ledgerClient,
 	}, nil

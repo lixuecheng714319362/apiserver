@@ -1,6 +1,7 @@
 package routers
 
 import (
+	"apiserver/controllers/chaincode"
 	"apiserver/controllers/ledger"
 	"github.com/astaxie/beego"
 )
@@ -17,6 +18,16 @@ func init() {
 					//beego.NSRouter("/txid", &ledger.LedgerController{}, "post:QueryBlockByTxID"),
 					beego.NSRouter("/range", &ledger.LedgerController{}, "post:QueryBlockByRange"),
 					//beego.NSRouter("/numbertest", &ledger.LedgerController{}, "post:QueryBlockByNumbertest"),
+				),
+
+				beego.NSNamespace("/chaincode",
+					beego.NSRouter("/install", &chaincode.CcController{}, "post:InstallChainCode"),
+					beego.NSRouter("/instantiate", &chaincode.CcController{}, "post:InstantiateChainCode"),
+					beego.NSRouter("/upgrade", &chaincode.CcController{}, "post:UpgradeChainCode"),
+					beego.NSNamespace("/query",
+						beego.NSRouter("/install", &chaincode.CcController{}, "post:QueryInstallChainCode"),
+						beego.NSRouter("/instantiate", &chaincode.CcController{}, "post:QueryInstantiateChainCode"),
+					),
 				),
 
 			),
