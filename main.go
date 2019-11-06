@@ -10,8 +10,14 @@ import (
 
 
 func main() {
+	logSet()
+	filter.Init()
+	beego.Run()
+}
+
+
+func logSet()  {
 	tool.LogLevel=beego.AppConfig.String("loglevel")
-	isFilter:=beego.AppConfig.String("filter")
 	switch tool.LogLevel {
 	case "error":
 		beego.SetLevel(beego.LevelError)
@@ -22,9 +28,4 @@ func main() {
 	default:
 		beego.SetLevel(beego.LevelInformational)
 	}
-	if isFilter!="false"{
-		beego.InsertFilter("*",beego.BeforeExec,filter.UserFilter)
-	}
-
-	beego.Run()
 }

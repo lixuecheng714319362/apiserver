@@ -2,6 +2,7 @@ package ledger
 
 import (
 	"apiserver/controllers/tool"
+	"apiserver/filter"
 	"apiserver/models/gosdk"
 	"apiserver/models/gosdk/tool/blockdata"
 	"encoding/base64"
@@ -18,11 +19,6 @@ import (
 type LedgerController struct {
 	beego.Controller
 }
-type Request struct {
-	Data  string
-}
-
-
 
 func (c *LedgerController) QueryInfo() {
 	defer tool.HanddlerError(c.Controller)
@@ -109,12 +105,6 @@ func (c *LedgerController) QueryBlockByHash() {
 		return
 	}
 	defer LedgerClient.CloseSDK()
-	//hash,err:=base64.StdEncoding.DecodeString(req.BlockHash)
-	//if err != nil {
-	//	beego.Error("base64 decode failed ", err)
-	//	tool.BackResError(c.Controller,http.StatusBadRequest,err.Error())
-	//	return
-	//}
 	res, err := LedgerClient.QueryBlockByHash(req.BlockHash)
 	if err != nil {
 		beego.Error("query ledger info err", err)
@@ -226,14 +216,12 @@ func (c *LedgerController) QueryBlockByRange() {
 	}
 	defer LedgerClient.CloseSDK()
 
-
 	res,err:=getBlockbyRange(req.Start,req.End,LedgerClient)
 	if err != nil {
 		beego.Error("get block by range failed ", err)
 		tool.BackResError(c.Controller, http.StatusBadRequest, err.Error())
 		return
 	}
-
 
 	beego.Info("query block range  from",req.Start,"to",req.End)
 	tool.BackResData(c.Controller, res)
@@ -244,12 +232,12 @@ func (c *LedgerController) QueryBlockByRange() {
 func getReq(c *LedgerController) (*gosdk.LedgerRequest,error)  {
 	data := c.Ctx.Input.RequestBody
 	//测试接口使用
-	if beego.AppConfig.String("filter")=="false"{
+	if filter.IsFilterVerify =="false"{
 		r:=&gosdk.LedgerRequest{}
 		_=json.Unmarshal(data,r)
 		return r,nil
 	}
-	req := &Request{}
+	req := &filter.ValidateRequest{}
 	err := json.Unmarshal(data, req)
 	if err != nil {
 		return nil,err
@@ -350,7 +338,7 @@ func (c *LedgerController) QueryBlockByNumbertest() {
 		return
 	}
 
-	//
+
 	//// 将或取的区块信息全部解析成json字符串
 	// TODO 必须注册所有引用的proto包参见configtxlator代码
 	//bt,err:=proto.Marshal(res)
