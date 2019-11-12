@@ -43,7 +43,33 @@ func (c *ChanController) CreateChannel() {
 	tool.BackResData(c.Controller, res)
 	return
 }
+func (c *ChanController) CreateNewChannel() {
+	defer tool.HanddlerError(c.Controller)
+	data := c.Ctx.Input.RequestBody
+	req := &gosdk.ResmgmtRequest{}
+	err := json.Unmarshal(data, req)
+	if err != nil {
+		beego.Error("request json unmarshal failed ", err)
+		tool.BackResError(c.Controller, http.StatusForbidden, err.Error())
+		return
+	}
+	ResClient, err := gosdk.GetResMgmtClient(req)
+	if err != nil {
+		beego.Error("create resClient failed ", err)
+		tool.BackResError(c.Controller, http.StatusBadRequest, err.Error())
+	}
+	defer ResClient.CloseSDK()
 
+	res, err := ResClient.CreateNewChannel(req)
+	if err != nil || res.TransactionID == "" {
+		beego.Error("create channel failed %s ", err)
+		tool.BackResError(c.Controller, http.StatusBadRequest, err.Error())
+		return
+	}
+	beego.Info("join channel successed", res.TransactionID)
+	tool.BackResData(c.Controller, res)
+	return
+}
 func (c *ChanController) JoinChannel() {
 	defer tool.HanddlerError(c.Controller)
 	data := c.Ctx.Input.RequestBody

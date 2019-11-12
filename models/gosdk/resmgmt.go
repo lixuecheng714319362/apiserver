@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/resmgmt"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/retry"
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/msp"
 	packager "github.com/hyperledger/fabric-sdk-go/pkg/fab/ccpackager/gopackager"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/resource"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
@@ -13,6 +14,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 	"github.com/pkg/errors"
+	"io"
 )
 
 type ResmgmtClient struct {
@@ -35,18 +37,19 @@ type ResmgmtRequest struct {
 	TargetPeers   []string //default 安装全部peer
 
 	//Channel 请求内容
+	MSPList 	 []string
+	SingerMap    map[string]string   //MSP 对应制定用户
 	ChannelTxPath string
 	//Chain Code请求配置
-	CCPath        string
-	CCGoPath      string
-	CCID          string
-	CCVersion     string
-	CCPackage     string
-	Policy    		string //背书策略
+	CCPath           string
+	CCGoPath         string
+	CCID             string
+	CCVersion        string
+	CCPackage        string
+	Policy           string //背书策略
 	CollectionConfig []utils.CollectionConfig
-	Args          []string
+	Args             []string
 }
-
 
 //参数 configPath sdk 配置文件路径  OrgAdmin组织管理账户名  orgName 组织名称
 // 创建资源管理
@@ -68,6 +71,30 @@ func GetResMgmtClient(request *ResmgmtRequest) (ResClient *ResmgmtClient, err er
 		SDK,
 		AdminClient,
 	}, nil
+}
+
+// 创建通道,不通过channel TxPath
+func (ResmgmtClient *ResmgmtClient) CreateNewChannel(request *ResmgmtRequest) ( resmgmt.SaveChannelResponse, error) {
+
+	var err error
+	var reader io.Reader
+	var signer []msp.SigningIdentity
+	if request.ChannelTxPath == "" {
+
+		if reader,err=GetCreateChannelReader(request.ChannelID,request.MSPList);err!=nil {
+			return resmgmt.SaveChannelResponse{},err
+		}
+		if signer,err=GetCreateChannelSinger(request.SingerMap,ResmgmtClient.SDK);err != nil {
+			return resmgmt.SaveChannelResponse{},err
+		}
+	}
+
+	saveChannelReq := resmgmt.SaveChannelRequest{
+		ChannelID:         request.ChannelID,
+		ChannelConfig:     reader,
+		SigningIdentities: signer,
+	}
+	return ResmgmtClient.Client.SaveChannel(saveChannelReq, resmgmt.WithOrdererEndpoint(request.TargetOrderer))
 }
 
 //参数ChannelID  管道ID channelTxPath 管道配置文件路径
@@ -113,14 +140,14 @@ func (ResmgmtClient *ResmgmtClient) QueryInstantiatedChaincodes(request *Resmgmt
 }
 
 // 安装链码
-func (ResmgmtClient *ResmgmtClient) ChainCodeInstall(request *ResmgmtRequest ) ([]resmgmt.InstallCCResponse, error) {
+func (ResmgmtClient *ResmgmtClient) ChainCodeInstall(request *ResmgmtRequest) ([]resmgmt.InstallCCResponse, error) {
 	// 打包链码
-	var ccPkg =&resource.CCPackage{}
-	var err  error
-	if request.CCPackage==""{
+	var ccPkg = &resource.CCPackage{}
+	var err error
+	if request.CCPackage == "" {
 		ccPkg, err = packager.NewCCPackage(request.CCPath, request.CCGoPath)
-	}else {
-		err= json.Unmarshal([]byte(request.CCPackage),ccPkg)
+	} else {
+		err = json.Unmarshal([]byte(request.CCPackage), ccPkg)
 	}
 
 	if err != nil {
@@ -142,21 +169,21 @@ func (ResmgmtClient *ResmgmtClient) ChainCodeInstall(request *ResmgmtRequest ) (
 func (ResmgmtClient *ResmgmtClient) ChainCodeInit(request *ResmgmtRequest) (resmgmt.InstantiateCCResponse, error) {
 	// 设置背书策略,该参数依赖configtx.yaml文件中Organizations->MSPID
 	// 需要区分背书策略
-	ccPolicy,err:=cauthdsl.FromString(request.Policy)
+	ccPolicy, err := cauthdsl.FromString(request.Policy)
 	if err != nil {
-		return resmgmt.InstantiateCCResponse{},err
+		return resmgmt.InstantiateCCResponse{}, err
 	}
-	colConfigs :=make([]*common.CollectionConfig,0)
-	if request.CollectionConfig!=nil{
+	colConfigs := make([]*common.CollectionConfig, 0)
+	if request.CollectionConfig != nil {
 		for _, v := range request.CollectionConfig {
-			cf,err:=utils.NewCollectionConfig(v.Name,v.MemberOrgsPolicy, v.RequiredPeerCount, v.MaximumPeerCount, v.BlockToLive)
+			cf, err := utils.NewCollectionConfig(v.Name, v.MemberOrgsPolicy, v.RequiredPeerCount, v.MaximumPeerCount, v.BlockToLive)
 			if err != nil {
-				return resmgmt.InstantiateCCResponse{},err
+				return resmgmt.InstantiateCCResponse{}, err
 			}
-			colConfigs =append(colConfigs, cf)
+			colConfigs = append(colConfigs, cf)
 		}
-	}else {
-		colConfigs =nil
+	} else {
+		colConfigs = nil
 	}
 
 	instantiateCCReq := resmgmt.InstantiateCCRequest{
@@ -178,21 +205,21 @@ func (ResmgmtClient *ResmgmtClient) ChainCodeInit(request *ResmgmtRequest) (resm
 func (ResmgmtClient *ResmgmtClient) ChainCodeUpgrade(request *ResmgmtRequest) (rep resmgmt.UpgradeCCResponse, err error) {
 	// 安装链码
 	// 需要区分背书策略
-	ccPolicy ,err:= cauthdsl.FromString(request.Policy)
+	ccPolicy, err := cauthdsl.FromString(request.Policy)
 	if err != nil {
-		return resmgmt.UpgradeCCResponse{},err
+		return resmgmt.UpgradeCCResponse{}, err
 	}
-	colConfig :=make([]*common.CollectionConfig,0)
-	if request.CollectionConfig!=nil{
+	colConfig := make([]*common.CollectionConfig, 0)
+	if request.CollectionConfig != nil {
 		for _, v := range request.CollectionConfig {
-			cf,err:=utils.NewCollectionConfig(v.Name,v.MemberOrgsPolicy, v.RequiredPeerCount, v.MaximumPeerCount, v.BlockToLive)
+			cf, err := utils.NewCollectionConfig(v.Name, v.MemberOrgsPolicy, v.RequiredPeerCount, v.MaximumPeerCount, v.BlockToLive)
 			if err != nil {
-				return resmgmt.UpgradeCCResponse{},err
+				return resmgmt.UpgradeCCResponse{}, err
 			}
-			colConfig =append(colConfig, cf)
+			colConfig = append(colConfig, cf)
 		}
-	}else {
-		colConfig =nil
+	} else {
+		colConfig = nil
 	}
 	upgradeCCReq := resmgmt.UpgradeCCRequest{
 		Name:    request.CCID,
@@ -201,7 +228,7 @@ func (ResmgmtClient *ResmgmtClient) ChainCodeUpgrade(request *ResmgmtRequest) (r
 		Args:    tool.ChangeArgs(request.Args),
 		Policy:  ccPolicy,
 	}
-	return  ResmgmtClient.Client.UpgradeCC(
+	return ResmgmtClient.Client.UpgradeCC(
 		request.ChannelID,
 		upgradeCCReq,
 		resmgmt.WithTargetEndpoints(request.TargetPeers...),
