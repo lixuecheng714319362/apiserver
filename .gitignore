@@ -27,3 +27,4 @@ models/gosdk/tool/CARevoke/
 *_test.go
 models/gosdk/tool/discovery/
 bin/
+models/gosdk/tool/crateChannel/
