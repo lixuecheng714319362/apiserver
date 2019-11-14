@@ -151,7 +151,9 @@ func getReq(c *CcController) (*gosdk.ResmgmtRequest,error)  {
 	//测试接口使用
 	if filter.IsFilterVerify =="false"{
 		r:=&gosdk.ResmgmtRequest{}
-		_=json.Unmarshal(data,r)
+		if err:=json.Unmarshal(data,r);err!=nil{
+			return nil,err
+		}
 		return r,nil
 	}
 	req := &filter.ValidateRequest{}

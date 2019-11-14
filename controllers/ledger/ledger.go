@@ -8,6 +8,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"github.com/astaxie/beego"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/msp"
@@ -237,7 +238,10 @@ func getReq(c *LedgerController) (*gosdk.LedgerRequest,error)  {
 	//测试接口使用
 	if filter.IsFilterVerify =="false"{
 		r:=&gosdk.LedgerRequest{}
-		_=json.Unmarshal(data,r)
+		if err:=json.Unmarshal(data,r);err!=nil{
+			return nil,err
+		}
+		changeSingleConfig(r)
 		return r,nil
 	}
 	req := &filter.ValidateRequest{}
@@ -247,6 +251,7 @@ func getReq(c *LedgerController) (*gosdk.LedgerRequest,error)  {
 	}
 	reqData :=&gosdk.LedgerRequest{}
 	err=json.Unmarshal([]byte(req.Data), reqData)
+	changeSingleConfig(reqData)
 	return reqData,nil
 }
 
@@ -375,4 +380,14 @@ func (c *LedgerController) QueryBlockByNumbertest() {
 	b.Header.CurrentBlockHash = hash
 	tool.BackResData(c.Controller, b)
 	return
+}
+func changeSingleConfig(req *gosdk.LedgerRequest)  {
+	if gosdk.SinglePeerModel=="true"{
+		req.OrgName=gosdk.PeerConfig.OrgName
+		req.ConfigPath=gosdk.PeerConfig.ConfigPath
+		req.UserName=gosdk.PeerConfig.UserName
+	}
+	fmt.Println(req)
+	return
+
 }

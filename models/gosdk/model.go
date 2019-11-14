@@ -1,9 +1,31 @@
 package gosdk
 
 import (
+	"github.com/astaxie/beego"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
 )
+
+var SinglePeerModel string
+var PeerConfig SinglePeerConfig
+type SinglePeerConfig struct {
+	ConfigPath string
+	UserName string
+	OrgName string
+}
+
+func init(){
+	SinglePeerModel=beego.AppConfig.String("singlepeer")
+	if SinglePeerModel!="true"{
+		return
+	}
+	PeerConfig=SinglePeerConfig{
+		ConfigPath:beego.AppConfig.String("configpath"),
+		UserName:beego.AppConfig.String("username"),
+		OrgName:beego.AppConfig.String("orgname"),
+	}
+
+}
 
 // 初始化SDK
 func InitializeSDK(configFile string) (*fabsdk.FabricSDK, error) {
