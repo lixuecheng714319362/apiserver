@@ -2,14 +2,11 @@ package channel
 
 import (
 	"apiserver/controllers/tool"
+	"apiserver/filter"
 	"apiserver/models/gosdk"
 	"encoding/json"
 	"github.com/astaxie/beego"
 	"net/http"
-)
-
-var (
-	Org1MSP = "CopyRightChain1MSP"
 )
 
 type ChanController struct {
@@ -18,9 +15,7 @@ type ChanController struct {
 
 func (c *ChanController) CreateChannel() {
 	defer tool.HanddlerError(c.Controller)
-	data := c.Ctx.Input.RequestBody
-	req := &gosdk.ResmgmtRequest{}
-	err := json.Unmarshal(data, req)
+	req, err := getReq(c)
 	if err != nil {
 		beego.Error("request json unmarshal failed ", err)
 		tool.BackResError(c.Controller, http.StatusForbidden, err.Error())
@@ -30,6 +25,7 @@ func (c *ChanController) CreateChannel() {
 	if err != nil {
 		beego.Error("create resClient failed ", err)
 		tool.BackResError(c.Controller, http.StatusBadRequest, err.Error())
+		return
 	}
 	defer ResClient.CloseSDK()
 
@@ -45,9 +41,7 @@ func (c *ChanController) CreateChannel() {
 }
 func (c *ChanController) CreateNewChannel() {
 	defer tool.HanddlerError(c.Controller)
-	data := c.Ctx.Input.RequestBody
-	req := &gosdk.ResmgmtRequest{}
-	err := json.Unmarshal(data, req)
+	req, err := getReq(c)
 	if err != nil {
 		beego.Error("request json unmarshal failed ", err)
 		tool.BackResError(c.Controller, http.StatusForbidden, err.Error())
@@ -57,6 +51,7 @@ func (c *ChanController) CreateNewChannel() {
 	if err != nil {
 		beego.Error("create resClient failed ", err)
 		tool.BackResError(c.Controller, http.StatusBadRequest, err.Error())
+		return
 	}
 	defer ResClient.CloseSDK()
 
@@ -72,9 +67,7 @@ func (c *ChanController) CreateNewChannel() {
 }
 func (c *ChanController) JoinChannel() {
 	defer tool.HanddlerError(c.Controller)
-	data := c.Ctx.Input.RequestBody
-	req := &gosdk.ResmgmtRequest{}
-	err := json.Unmarshal(data, req)
+	req, err := getReq(c)
 	if err != nil {
 		beego.Error("request json unmarshal failed ", err)
 		tool.BackResError(c.Controller, http.StatusForbidden, err.Error())
@@ -100,9 +93,7 @@ func (c *ChanController) JoinChannel() {
 
 func (c *ChanController) QueryChannel() {
 	defer tool.HanddlerError(c.Controller)
-	data := c.Ctx.Input.RequestBody
-	req := &gosdk.ResmgmtRequest{}
-	err := json.Unmarshal(data, req)
+	req, err := getReq(c)
 	if err != nil {
 		beego.Error("request json unmarshal failed ", err)
 		tool.BackResError(c.Controller, http.StatusForbidden, err.Error())
@@ -124,4 +115,21 @@ func (c *ChanController) QueryChannel() {
 	beego.Info("query channel successed", res.Channels)
 	tool.BackResData(c.Controller, res.Channels)
 	return
+}
+func getReq(c *ChanController) (*gosdk.ResmgmtRequest, error) {
+	data := c.Ctx.Input.RequestBody
+	//测试接口使用
+	if filter.IsFilterVerify == "false" {
+		r := &gosdk.ResmgmtRequest{}
+		_ = json.Unmarshal(data, r)
+		return r, nil
+	}
+	req := &filter.ValidateRequest{}
+	err := json.Unmarshal(data, req)
+	if err != nil {
+		return nil, err
+	}
+	reqData := &gosdk.ResmgmtRequest{}
+	err = json.Unmarshal([]byte(req.Data), reqData)
+	return reqData, nil
 }

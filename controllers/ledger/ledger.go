@@ -2,6 +2,7 @@ package ledger
 
 import (
 	"apiserver/controllers/tool"
+	"apiserver/filter"
 	"apiserver/models/gosdk"
 	"apiserver/models/gosdk/tool/blockdata"
 	"encoding/base64"
@@ -18,10 +19,6 @@ import (
 type LedgerController struct {
 	beego.Controller
 }
-type Request struct {
-	Data  string
-}
-
 
 
 func (c *LedgerController) QueryInfo() {
@@ -109,12 +106,6 @@ func (c *LedgerController) QueryBlockByHash() {
 		return
 	}
 	defer LedgerClient.CloseSDK()
-	//hash,err:=base64.StdEncoding.DecodeString(req.BlockHash)
-	//if err != nil {
-	//	beego.Error("base64 decode failed ", err)
-	//	tool.BackResError(c.Controller,http.StatusBadRequest,err.Error())
-	//	return
-	//}
 	res, err := LedgerClient.QueryBlockByHash(req.BlockHash)
 	if err != nil {
 		beego.Error("query ledger info err", err)
@@ -244,12 +235,12 @@ func (c *LedgerController) QueryBlockByRange() {
 func getReq(c *LedgerController) (*gosdk.LedgerRequest,error)  {
 	data := c.Ctx.Input.RequestBody
 	//测试接口使用
-	if beego.AppConfig.String("filter")=="false"{
+	if filter.IsFilterVerify =="false"{
 		r:=&gosdk.LedgerRequest{}
 		_=json.Unmarshal(data,r)
 		return r,nil
 	}
-	req := &Request{}
+	req := &filter.ValidateRequest{}
 	err := json.Unmarshal(data, req)
 	if err != nil {
 		return nil,err

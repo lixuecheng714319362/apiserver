@@ -37,8 +37,8 @@ type ResmgmtRequest struct {
 	TargetPeers   []string //default 安装全部peer
 
 	//Channel 请求内容
-	MSPList 	 []string
-	SingerMap    map[string]string   //MSP 对应制定用户
+	OrgNameList   []string
+	SingerMap     map[string]string   //MSP 对应制定用户
 	ChannelTxPath string
 	//Chain Code请求配置
 	CCPath           string
@@ -81,7 +81,7 @@ func (ResmgmtClient *ResmgmtClient) CreateNewChannel(request *ResmgmtRequest) ( 
 	var signer []msp.SigningIdentity
 	if request.ChannelTxPath == "" {
 
-		if reader,err=GetCreateChannelReader(request.ChannelID,request.MSPList);err!=nil {
+		if reader,err=GetCreateChannelReader(request.ChannelID,request.OrgNameList);err!=nil {
 			return resmgmt.SaveChannelResponse{},err
 		}
 		if signer,err=GetCreateChannelSinger(request.SingerMap,ResmgmtClient.SDK);err != nil {

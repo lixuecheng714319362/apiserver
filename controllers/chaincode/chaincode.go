@@ -2,6 +2,7 @@ package chaincode
 
 import (
 	"apiserver/controllers/tool"
+	"apiserver/filter"
 	"apiserver/models/gosdk"
 	"encoding/json"
 	"github.com/astaxie/beego"
@@ -11,10 +12,6 @@ import (
 type CcController struct {
 	beego.Controller
 }
-type Request struct {
-	Data  string
-}
-var filter =beego.AppConfig.String("filter")
 
 
 func (c *CcController) InstallChainCode() {
@@ -38,7 +35,7 @@ func (c *CcController) InstallChainCode() {
 		tool.BackResError(c.Controller, http.StatusBadRequest, err.Error())
 		return
 	}
-	beego.Info(res)
+	beego.Info("cc install :",req.CCID,res)
 	tool.BackResSuccess(c.Controller)
 	return
 
@@ -118,7 +115,7 @@ func (c *CcController) QueryInstallChainCode() {
 		tool.BackResError(c.Controller, http.StatusBadRequest, err.Error())
 		return
 	}
-	beego.Info(res)
+	beego.Info("query  installed cc success")
 	tool.BackResData(c.Controller, res)
 	return
 }
@@ -144,7 +141,7 @@ func (c *CcController) QueryInstantiateChainCode() {
 		tool.BackResError(c.Controller, http.StatusBadRequest, err.Error())
 		return
 	}
-	beego.Info(res)
+	beego.Info("query instantiated cc success")
 	tool.BackResData(c.Controller, res)
 	return
 }
@@ -152,12 +149,12 @@ func (c *CcController) QueryInstantiateChainCode() {
 func getReq(c *CcController) (*gosdk.ResmgmtRequest,error)  {
 	data := c.Ctx.Input.RequestBody
 	//测试接口使用
-	if filter=="false"{
+	if filter.IsFilterVerify =="false"{
 		r:=&gosdk.ResmgmtRequest{}
 		_=json.Unmarshal(data,r)
 		return r,nil
 	}
-	req := &Request{}
+	req := &filter.ValidateRequest{}
 	err := json.Unmarshal(data, req)
 	if err != nil {
 		return nil,err
