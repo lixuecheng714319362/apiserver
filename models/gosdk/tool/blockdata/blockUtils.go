@@ -53,9 +53,15 @@ type CCResponsePayload struct {
 type NsRwSets struct {
 	NameSpace        string
 	Reads            []*kvrwset.KVRead
-	Writes           []*kvrwset.KVWrite
+	Writes           []*KVWrite
 	RangeQueriesInfo []*kvrwset.RangeQueryInfo
 	MetadataWrites   []*kvrwset.KVMetadataWrite
+}
+
+type KVWrite struct {
+	Key string
+	IsDelete bool
+	Value string
 }
 
 type CCProposalPayload struct {
@@ -241,7 +247,12 @@ func EnvelopeToTrasaction(env *common.Envelope) (*Transaction, error) {
 					return nil, err
 				}
 				nsRwSet.Reads = kv.Reads
-				nsRwSet.Writes = kv.Writes
+				writes:=[]*KVWrite{}
+				for _, v := range kv.Writes {
+					write:=&KVWrite{v.Key,v.IsDelete,string(v.Value)}
+					writes=append(writes,write)
+				}
+				nsRwSet.Writes = writes
 				nsRwSet.MetadataWrites = kv.MetadataWrites
 				nsRwSet.RangeQueriesInfo = kv.RangeQueriesInfo
 				action.CCResponsePayload.NsRwSets = append(action.CCResponsePayload.NsRwSets, nsRwSet)

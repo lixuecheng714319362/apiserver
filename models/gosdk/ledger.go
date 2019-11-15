@@ -23,7 +23,7 @@ type LedgerRequest struct {
 	ChannelID   string
 	UserName    string //组织用户名
 	OrgName     string //组织在sdk配置文件中的标识
-	BlockHash   []byte
+	BlockHash   string
 	TxID        string
 	BlockNumber uint64
 	Start       uint64

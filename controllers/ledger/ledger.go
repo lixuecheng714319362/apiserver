@@ -6,6 +6,7 @@ import (
 	"apiserver/models/gosdk"
 	"apiserver/models/gosdk/tool/blockdata"
 	"encoding/base64"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -107,7 +108,13 @@ func (c *LedgerController) QueryBlockByHash() {
 		return
 	}
 	defer LedgerClient.CloseSDK()
-	res, err := LedgerClient.QueryBlockByHash(req.BlockHash)
+	blockHash,err:=hex.DecodeString(req.BlockHash)
+	if err != nil {
+		beego.Error("block hash hex decode err", err)
+		tool.BackResError(c.Controller, http.StatusBadRequest, err.Error())
+		return
+	}
+	res, err := LedgerClient.QueryBlockByHash(blockHash)
 	if err != nil {
 		beego.Error("query ledger info err", err)
 		tool.BackResError(c.Controller, http.StatusBadRequest, err.Error())
@@ -157,7 +164,7 @@ func (c *LedgerController) QueryBlockByTxID() {
 		tool.BackResError(c.Controller, http.StatusBadRequest, err.Error())
 		return
 	}
-	b.CurrentBlockHash = hash
+	b.CurrentBlockHash = hex.EncodeToString(hash)
 	tool.BackResData(c.Controller, b)
 	return
 }
@@ -196,7 +203,7 @@ func (c *LedgerController) QueryBlockByNumber() {
 		tool.BackResError(c.Controller, http.StatusBadRequest, err.Error())
 		return
 	}
-	b.CurrentBlockHash = hash
+	b.CurrentBlockHash = hex.EncodeToString(hash)
 	tool.BackResData(c.Controller, b)
 	return
 }
@@ -295,12 +302,12 @@ func getBlockbyRange(start uint64,end uint64,LedgerClient *gosdk.LedgerClient)([
 	}
 	for k, v := range res {
 		if k==int(end-start){
-			v.CurrentBlockHash=hash
+			v.CurrentBlockHash=hex.EncodeToString(hash)
 		}else {
 			v.CurrentBlockHash=res[k+1].PreviousHash
 		}
 	}
-	res[end-start].CurrentBlockHash = hash
+	res[end-start].CurrentBlockHash = hex.EncodeToString(hash)
 	beego.Debug("end getblockrange",time.Now().Unix())
 	return res,err
 }
