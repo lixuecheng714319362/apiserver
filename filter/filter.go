@@ -20,11 +20,11 @@ type ValidateRequest struct {
 //获取公钥
 var PubKey *rsa.PublicKey
 func Init()  {
-       if IsFilterVerify !="false"{
-               beego.InsertFilter("*",beego.BeforeExec,UserFilter)
-       }else {
-               return
+       if IsFilterVerify =="false"{
+              return
        }
+       beego.InsertFilter("*",beego.BeforeExec,UserFilter)
+
        p,err:=ioutil.ReadFile("./conf/cert.pem")
        if err != nil {
                panic("can not get pubkey: "+err.Error())
