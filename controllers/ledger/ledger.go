@@ -120,16 +120,23 @@ func (c *LedgerController) QueryBlockByHash() {
 		tool.BackResError(c.Controller, http.StatusBadRequest, err.Error())
 		return
 	}
+
 	b, err := Getinfo(res)
 	if err != nil {
 		beego.Error("get block info err", err)
 		tool.BackResError(c.Controller, http.StatusBadRequest, err.Error())
 		return
 	}
-	b.CurrentBlockHash = req.BlockHash
 	tool.BackResData(c.Controller, b)
 	return
 }
+
+
+
+
+
+
+
 
 func (c *LedgerController) QueryBlockByTxID() {
 	defer tool.HanddlerError(c.Controller)
@@ -158,13 +165,6 @@ func (c *LedgerController) QueryBlockByTxID() {
 		tool.BackResError(c.Controller, http.StatusBadRequest, err.Error())
 		return
 	}
-	hash, err := getBlockHashBynumber(LedgerClient, b.Number)
-	if err != nil {
-		beego.Error("get current hash failed ", err)
-		tool.BackResError(c.Controller, http.StatusBadRequest, err.Error())
-		return
-	}
-	b.CurrentBlockHash = hex.EncodeToString(hash)
 	tool.BackResData(c.Controller, b)
 	return
 }
@@ -197,13 +197,6 @@ func (c *LedgerController) QueryBlockByNumber() {
 		return
 	}
 	beego.Info("query block info ,block number is",res.Header.Number)
-	hash, err := getBlockHashBynumber(LedgerClient, req.BlockNumber)
-	if err != nil {
-		beego.Error("get current hash failed ", err)
-		tool.BackResError(c.Controller, http.StatusBadRequest, err.Error())
-		return
-	}
-	b.CurrentBlockHash = hex.EncodeToString(hash)
 	tool.BackResData(c.Controller, b)
 	return
 }
@@ -296,39 +289,27 @@ func getBlockbyRange(start uint64,end uint64,LedgerClient *gosdk.LedgerClient)([
 	if flag==false{
 		return nil,errors.New("get block error")
 	}
-	hash, err := getBlockHashBynumber(LedgerClient, end)
-	if err != nil {
-		return nil,err
-	}
-	for k, v := range res {
-		if k==int(end-start){
-			v.CurrentBlockHash=hex.EncodeToString(hash)
-		}else {
-			v.CurrentBlockHash=res[k+1].PreviousHash
-		}
-	}
-	res[end-start].CurrentBlockHash = hex.EncodeToString(hash)
 	beego.Debug("end getblockrange",time.Now().Unix())
-	return res,err
+	return res,nil
 }
 
 
-func getBlockHashBynumber(client *gosdk.LedgerClient, number uint64) ([]byte, error) {
-	info, err := client.QueryInfo()
-	if err != nil {
-		return nil, err
-	}
-	if info.BCI.Height-1 == number {
-		return info.BCI.CurrentBlockHash, nil
-	} else if info.BCI.Height-2 == number {
-		return info.BCI.PreviousBlockHash, nil
-	}
-	b, err := client.QueryBlockByNumber(number + 1)
-	if err != nil {
-		return nil, err
-	}
-	return b.Header.PreviousHash, nil
-}
+//func getBlockHashBynumber(client *gosdk.LedgerClient, number uint64) ([]byte, error) {
+//	info, err := client.QueryInfo()
+//	if err != nil {
+//		return nil, err
+//	}
+//	if info.BCI.Height-1 == number {
+//		return info.BCI.CurrentBlockHash, nil
+//	} else if info.BCI.Height-2 == number {
+//		return info.BCI.PreviousBlockHash, nil
+//	}
+//	b, err := client.QueryBlockByNumber(number + 1)
+//	if err != nil {
+//		return nil, err
+//	}
+//	return b.Header.PreviousHash, nil
+//}
 
 
 func (c *LedgerController) QueryBlockByNumbertest() {
@@ -378,13 +359,6 @@ func (c *LedgerController) QueryBlockByNumbertest() {
 		return
 	}
 	beego.Info("query block info ,block number is",res.Header.Number)
-	hash, err := getBlockHashBynumber(LedgerClient, req.BlockNumber)
-	if err != nil {
-		beego.Error("get current hash failed ", err)
-		tool.BackResError(c.Controller, http.StatusBadRequest, err.Error())
-		return
-	}
-	b.Header.CurrentBlockHash = hash
 	tool.BackResData(c.Controller, b)
 	return
 }

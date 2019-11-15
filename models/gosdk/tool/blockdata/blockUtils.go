@@ -1,6 +1,7 @@
 package blockdata
 
 import (
+	utils2 "apiserver/models/gosdk/tool/utils"
 	"errors"
 	"fmt"
 	"github.com/gogo/protobuf/proto"
@@ -120,12 +121,16 @@ func Getinfo(thisBlock *common.Block) (*Block, error) {
 	if thisBlock.Metadata!=nil && len(thisBlock.Metadata.Metadata)>=2{
 		txFilter=thisBlock.Metadata.Metadata[2]
 	}
+	currentBlockHash,err:=utils2.GetCurrentBlockHash(thisBlock)
+	if err!=nil{
+		return nil,err
+	}
 	newBlock := &Block{
 		Header: &BlockHead{
 			Number:       thisBlock.Header.Number,
 			DataHash:     thisBlock.Header.DataHash,
 			PreviousHash: thisBlock.Header.PreviousHash,
-
+			CurrentBlockHash:currentBlockHash,
 		},
 		TransactionNumber: len(thisBlock.Data.Data),
 		TransactionsFilter: txFilter,
