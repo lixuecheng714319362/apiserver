@@ -9,7 +9,6 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"github.com/astaxie/beego"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/msp"
@@ -368,7 +367,5 @@ func changeSingleConfig(req *gosdk.LedgerRequest)  {
 		req.ConfigPath=gosdk.PeerConfig.ConfigPath
 		req.UserName=gosdk.PeerConfig.UserName
 	}
-	fmt.Println(req)
 	return
-
 }
