@@ -3,6 +3,7 @@ package ledger
 import (
 	"apiserver/models/gosdk/tool/blockdata"
 	"crypto/x509"
+	"encoding/hex"
 	"encoding/json"
 	"encoding/pem"
 	"fmt"
@@ -15,9 +16,9 @@ const(
 
 type Block struct {
 	Number            uint64
-	CurrentBlockHash  []byte
-	PreviousHash      []byte
-	DataHash          []byte
+	CurrentBlockHash  string
+	PreviousHash      string
+	DataHash          string
 	TransactionNumber int
 	Transactions      []*Transaction
 }
@@ -47,9 +48,9 @@ func Getinfo(thisBlock *common.Block) (*Block, error) {
 
 	block := &Block{
 		Number:            b.Header.Number,
-		CurrentBlockHash:  b.Header.CurrentBlockHash,
-		PreviousHash:      b.Header.PreviousHash,
-		DataHash:          b.Header.DataHash,
+		CurrentBlockHash:  hex.EncodeToString(b.Header.CurrentBlockHash),
+		PreviousHash:      hex.EncodeToString(b.Header.PreviousHash),
+		DataHash:          hex.EncodeToString(b.Header.DataHash),
 		TransactionNumber: b.TransactionNumber,
 	}
 	filterNum:=len(b.TransactionsFilter)

@@ -1,6 +1,7 @@
 package blockdata
 
 import (
+	utils2 "apiserver/models/gosdk/tool/utils"
 	"errors"
 	"fmt"
 	"github.com/gogo/protobuf/proto"
@@ -53,9 +54,15 @@ type CCResponsePayload struct {
 type NsRwSets struct {
 	NameSpace        string
 	Reads            []*kvrwset.KVRead
-	Writes           []*kvrwset.KVWrite
+	Writes           []*KVWrite
 	RangeQueriesInfo []*kvrwset.RangeQueryInfo
 	MetadataWrites   []*kvrwset.KVMetadataWrite
+}
+
+type KVWrite struct {
+	Key string
+	IsDelete bool
+	Value string
 }
 
 type CCProposalPayload struct {
@@ -114,12 +121,16 @@ func Getinfo(thisBlock *common.Block) (*Block, error) {
 	if thisBlock.Metadata!=nil && len(thisBlock.Metadata.Metadata)>=2{
 		txFilter=thisBlock.Metadata.Metadata[2]
 	}
+	currentBlockHash,err:=utils2.GetCurrentBlockHash(thisBlock)
+	if err!=nil{
+		return nil,err
+	}
 	newBlock := &Block{
 		Header: &BlockHead{
 			Number:       thisBlock.Header.Number,
 			DataHash:     thisBlock.Header.DataHash,
 			PreviousHash: thisBlock.Header.PreviousHash,
-
+			CurrentBlockHash:currentBlockHash,
 		},
 		TransactionNumber: len(thisBlock.Data.Data),
 		TransactionsFilter: txFilter,
@@ -241,7 +252,12 @@ func EnvelopeToTrasaction(env *common.Envelope) (*Transaction, error) {
 					return nil, err
 				}
 				nsRwSet.Reads = kv.Reads
-				nsRwSet.Writes = kv.Writes
+				writes:=[]*KVWrite{}
+				for _, v := range kv.Writes {
+					write:=&KVWrite{v.Key,v.IsDelete,string(v.Value)}
+					writes=append(writes,write)
+				}
+				nsRwSet.Writes = writes
 				nsRwSet.MetadataWrites = kv.MetadataWrites
 				nsRwSet.RangeQueriesInfo = kv.RangeQueriesInfo
 				action.CCResponsePayload.NsRwSets = append(action.CCResponsePayload.NsRwSets, nsRwSet)
