@@ -6,6 +6,7 @@ import (
        "encoding/pem"
        "github.com/astaxie/beego"
        "io/ioutil"
+       "net/http"
 )
 
 var IsFilterVerify =beego.AppConfig.String("filter")
@@ -20,6 +21,20 @@ type ValidateRequest struct {
 //获取公钥
 var PubKey *rsa.PublicKey
 func Init()  {
+
+       urlManager()
+       verifyFilterRegister()
+
+}
+func urlManager()  {
+       beego.ErrorHandler("404",urlErr)
+}
+var urlErr http.HandlerFunc= func(w http.ResponseWriter, r *http.Request) {
+       w.Write([]byte("Not Found : 404"))
+}
+
+func verifyFilterRegister (){
+
        if IsFilterVerify =="false"{
               return
        }
