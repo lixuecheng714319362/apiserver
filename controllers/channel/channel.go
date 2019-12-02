@@ -118,6 +118,7 @@ func (c *ChanController) QueryChannel() {
 }
 func getReq(c *ChanController) (*gosdk.ResmgmtRequest, error) {
 	data := c.Ctx.Input.RequestBody
+	beego.Debug("request data is ",string(data))
 	//测试接口使用
 	if filter.IsFilterVerify == "false" {
 		r := &gosdk.ResmgmtRequest{}

@@ -126,6 +126,7 @@ func (c *LedgerController) QueryBlockByHash() {
 		tool.BackResError(c.Controller, http.StatusBadRequest, err.Error())
 		return
 	}
+	beego.Info("query block info ,block hash  is",req.BlockHash)
 	tool.BackResData(c.Controller, b)
 	return
 }
@@ -164,6 +165,7 @@ func (c *LedgerController) QueryBlockByTxID() {
 		tool.BackResError(c.Controller, http.StatusBadRequest, err.Error())
 		return
 	}
+	beego.Info("query block info by  txid  ,txid is",req.TxID)
 	tool.BackResData(c.Controller, b)
 	return
 }
@@ -234,6 +236,7 @@ func (c *LedgerController) QueryBlockByRange() {
 
 func getReq(c *LedgerController) (*gosdk.LedgerRequest,error)  {
 	data := c.Ctx.Input.RequestBody
+	beego.Debug("request data is ",string(data))
 	//测试接口使用
 	if filter.IsFilterVerify =="false"{
 		r:=&gosdk.LedgerRequest{}
