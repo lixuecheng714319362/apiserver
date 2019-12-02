@@ -134,5 +134,14 @@ func getReq(c *ChanController) (*gosdk.ResmgmtRequest, error) {
 	}
 	reqData := &gosdk.ResmgmtRequest{}
 	err = json.Unmarshal([]byte(req.Data), reqData)
+	changeSingleConfig(reqData)
 	return reqData, nil
+}
+func changeSingleConfig(req *gosdk.ResmgmtRequest)  {
+	if gosdk.SinglePeerModel=="true"{
+		req.OrgName=gosdk.PeerConfig.OrgName
+		req.ConfigPath=gosdk.PeerConfig.ConfigPath
+		req.UserName=gosdk.PeerConfig.UserName
+	}
+	return
 }

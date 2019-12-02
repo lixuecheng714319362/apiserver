@@ -15,21 +15,31 @@ type ChannelClient struct {
 	Client *channel.Client
 }
 
+type ChannelRequest struct {
+	ConfigPath  string
+	UserName    string
+	ChannelID   string
+	CCID        string
+	Fcn         string //OrdID
+	Args        []string
+	TargetPeers []string
+}
+
 // 创建通道客户端
-func GetChannelClient(configPath, userName, channelID string) (*ChannelClient, error) {
-	SDK, err := InitializeSDK(configPath)
+func GetChannelClient(channelRequest *ChannelRequest) (*ChannelClient, error) {
+	SDK, err := InitializeSDK(channelRequest.ConfigPath)
 	if err != nil {
 		return nil, err
 	}
-	client, err := channel.New(SDK.ChannelContext(channelID, fabsdk.WithUser(userName)))
+	client, err := channel.New(SDK.ChannelContext(channelRequest.ChannelID, fabsdk.WithUser(channelRequest.UserName),))
 	if err != nil {
 		SDK.Close()
 		return nil, err
 	}
 	return &ChannelClient{
-		configPath,
-		userName,
-		channelID,
+		channelRequest.ConfigPath,
+		channelRequest.UserName,
+		channelRequest.ChannelID,
 		SDK,
 		client,
 	}, nil
@@ -47,7 +57,7 @@ func (ChannelClient *ChannelClient) Query(chainCodeID, Fcn string, args [][]byte
 	)
 }
 
-func (ChannelClient *ChannelClient) Invoke(chainCodeID, Fcn string, args [][]byte) (channel.Response, error) {
+func (ChannelClient *ChannelClient) Invoke(chainCodeID, Fcn string, args [][]byte,targetPeers []string) (channel.Response, error) {
 	//TODO
 	//TransientMap、InvocationChain功能
 	return ChannelClient.Client.Execute(
@@ -56,7 +66,7 @@ func (ChannelClient *ChannelClient) Invoke(chainCodeID, Fcn string, args [][]byt
 			Fcn:         Fcn,
 			Args:        args,
 		},
-		//channel.WithTargetEndpoints(targetPeers...),
+		channel.WithTargetEndpoints(targetPeers...),
 	)
 }
 

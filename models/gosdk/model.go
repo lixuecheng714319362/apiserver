@@ -8,21 +8,24 @@ import (
 
 var SinglePeerModel string
 var PeerConfig SinglePeerConfig
+
 type SinglePeerConfig struct {
 	ConfigPath string
-	UserName string
-	OrgName string
+	UserName   string
+	OrgName    string
+	TargetPeers string
 }
 
-func init(){
-	SinglePeerModel=beego.AppConfig.String("singlepeer")
-	if SinglePeerModel!="true"{
+func init() {
+	SinglePeerModel = beego.AppConfig.String("singlepeer")
+	if SinglePeerModel != "true" {
 		return
 	}
-	PeerConfig=SinglePeerConfig{
-		ConfigPath:beego.AppConfig.String("configpath"),
-		UserName:beego.AppConfig.String("username"),
-		OrgName:beego.AppConfig.String("orgname"),
+	PeerConfig = SinglePeerConfig{
+		ConfigPath: beego.AppConfig.String("configpath"),
+		UserName:   beego.AppConfig.String("username"),
+		OrgName:    beego.AppConfig.String("orgname"),
+		TargetPeers: beego.AppConfig.String("targetpeers"),
 	}
 
 }

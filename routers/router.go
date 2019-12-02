@@ -4,6 +4,7 @@ import (
 	"apiserver/controllers/chaincode"
 	"apiserver/controllers/channel"
 	"apiserver/controllers/ledger"
+	"apiserver/controllers/transaction"
 	"github.com/astaxie/beego"
 )
 
@@ -20,7 +21,7 @@ func init() {
 					beego.NSRouter("/number", &ledger.LedgerController{}, "post:QueryBlockByNumber"),
 					beego.NSRouter("/txid", &ledger.LedgerController{}, "post:QueryBlockByTxID"),
 					beego.NSRouter("/range", &ledger.LedgerController{}, "post:QueryBlockByRange"),
-					//beego.NSRouter("/numbertest", &ledger.LedgerController{}, "post:QueryBlockByNumbertest"),
+					beego.NSRouter("/test", &ledger.LedgerController{}, "post:QueryBlockByNumberTest"),
 				),
 
 
@@ -43,6 +44,12 @@ func init() {
 					beego.NSRouter("/query", &channel.ChanController{}, "post:QueryChannel"),
 				),
 
+				beego.NSNamespace("/transaction",
+					beego.NSRouter("/invoke", &transaction.InvokeController{}, "post:Invoke"),
+					beego.NSRouter("/query", &transaction.InvokeController{}, "post:Query"),
+					beego.NSRouter("/empty", &transaction.InvokeController{}, "post:InvokeEmpty"),
+					beego.NSRouter("/func", &transaction.InvokeController{}, "post:InvokeFunc"),
+				),
 
 			),
 		)
