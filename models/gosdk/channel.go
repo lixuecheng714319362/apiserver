@@ -18,6 +18,7 @@ type ChannelClient struct {
 type ChannelRequest struct {
 	ConfigPath  string
 	UserName    string
+
 	ChannelID   string
 	CCID        string
 	Fcn         string //OrdID

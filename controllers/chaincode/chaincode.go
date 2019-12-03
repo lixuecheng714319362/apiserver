@@ -155,6 +155,7 @@ func getReq(c *CcController) (*gosdk.ResmgmtRequest,error)  {
 		if err:=json.Unmarshal(data,r);err!=nil{
 			return nil,err
 		}
+		gosdk.ChangeResmgmtRequetSingleConfig(r)
 		return r,nil
 	}
 	req := &filter.ValidateRequest{}
@@ -164,15 +165,6 @@ func getReq(c *CcController) (*gosdk.ResmgmtRequest,error)  {
 	}
 	reqData :=&gosdk.ResmgmtRequest{}
 	err=json.Unmarshal([]byte(req.Data), reqData)
-	changeSingleConfig(reqData)
+	gosdk.ChangeResmgmtRequetSingleConfig(reqData)
 	return reqData,nil
-}
-
-func changeSingleConfig(req *gosdk.ResmgmtRequest)  {
-	if gosdk.SinglePeerModel=="true"{
-		req.OrgName=gosdk.PeerConfig.OrgName
-		req.ConfigPath=gosdk.PeerConfig.ConfigPath
-		req.UserName=gosdk.PeerConfig.UserName
-	}
-	return
 }

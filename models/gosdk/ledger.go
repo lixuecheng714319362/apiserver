@@ -20,9 +20,10 @@ type LedgerClient struct {
 
 type LedgerRequest struct {
 	ConfigPath  string
-	ChannelID   string
 	UserName    string //组织用户名
 	OrgName     string //组织在sdk配置文件中的标识
+
+	ChannelID   string
 	BlockHash   string
 	TxID        string
 	BlockNumber uint64

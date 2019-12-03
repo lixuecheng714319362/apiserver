@@ -123,6 +123,7 @@ func getReq(c *InvokeController) (*gosdk.ChannelRequest, error) {
 		if err := json.Unmarshal(data, r); err != nil {
 			return nil, err
 		}
+		gosdk.ChangeChannelRequestSingleConfig(r)
 		return r, nil
 	}
 	req := &filter.ValidateRequest{}
@@ -132,26 +133,10 @@ func getReq(c *InvokeController) (*gosdk.ChannelRequest, error) {
 	}
 	reqData := &gosdk.ChannelRequest{}
 	err = json.Unmarshal([]byte(req.Data), reqData)
-	changeSingleConfig(reqData)
+	gosdk.ChangeChannelRequestSingleConfig(reqData)
 	return reqData, nil
 }
 
-func changeSingleConfig(req *gosdk.ChannelRequest) {
-	if gosdk.SinglePeerModel == "true" {
-		if gosdk.PeerConfig.TargetPeers != "" {
-			targetPeers := make([]string, 0)
-			err := json.Unmarshal([]byte(gosdk.PeerConfig.TargetPeers), &targetPeers)
-			if err == nil && len(targetPeers) > 0 {
-				req.TargetPeers = targetPeers
-			} else {
-				req.TargetPeers = nil
-			}
-		}
-		req.ConfigPath = gosdk.PeerConfig.ConfigPath
-		req.UserName = gosdk.PeerConfig.UserName
-	}
-	return
-}
 
 //下面为缓存redis数据，和缓存client
 var channelClientPool = make(map[string]*gosdk.ChannelClient)

@@ -311,7 +311,7 @@ func getReq(c *LedgerController) (*gosdk.LedgerRequest, error) {
 		if err := json.Unmarshal(data, r); err != nil {
 			return nil, err
 		}
-		changeSingleConfig(r)
+		gosdk.ChangeLedgerRequestSingleConfig(r)
 		return r, nil
 	}
 	req := &filter.ValidateRequest{}
@@ -321,18 +321,11 @@ func getReq(c *LedgerController) (*gosdk.LedgerRequest, error) {
 	}
 	reqData := &gosdk.LedgerRequest{}
 	err = json.Unmarshal([]byte(req.Data), reqData)
-	changeSingleConfig(reqData)
+	gosdk.ChangeLedgerRequestSingleConfig(reqData)
 	return reqData, nil
 }
 
-func changeSingleConfig(req *gosdk.LedgerRequest) {
-	if gosdk.SinglePeerModel == "true" {
-		req.OrgName = gosdk.PeerConfig.OrgName
-		req.ConfigPath = gosdk.PeerConfig.ConfigPath
-		req.UserName = gosdk.PeerConfig.UserName
-	}
-	return
-}
+
 
 func getBlockbyRange(start uint64, end uint64, LedgerClient *gosdk.LedgerClient) ([]*Block, error) {
 	beego.Debug("start getblockrange", time.Now().Unix())

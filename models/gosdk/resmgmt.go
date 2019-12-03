@@ -31,9 +31,10 @@ type ResmgmtRequest struct {
 	ConfigPath    string
 	UserName      string
 	OrgName       string
+
 	ChannelID     string
 	TargetOrderer string
-	TargetPeer    string   //查询连码是否安装
+	//TargetPeer    string   //查询连码是否安装
 	TargetPeers   []string //default 安装全部peer
 
 	//Channel 请求内容
@@ -122,20 +123,20 @@ func (ResmgmtClient *ResmgmtClient) JoinChannel(request *ResmgmtRequest) error {
 // 加入通道
 func (ResmgmtClient *ResmgmtClient) QueryChannel(request *ResmgmtRequest) (*peer.ChannelQueryResponse, error) {
 	return ResmgmtClient.Client.QueryChannels(
-		resmgmt.WithTargetEndpoints(request.TargetPeer),
+		resmgmt.WithTargetEndpoints(request.TargetPeers...),
 	)
 }
 
 func (ResmgmtClient *ResmgmtClient) QueryInstalledChaincodes(request *ResmgmtRequest) (*peer.ChaincodeQueryResponse, error) {
 	return ResmgmtClient.Client.QueryInstalledChaincodes(
-		resmgmt.WithTargetEndpoints(request.TargetPeer),
+		resmgmt.WithTargetEndpoints(request.TargetPeers...),
 	)
 }
 
 func (ResmgmtClient *ResmgmtClient) QueryInstantiatedChaincodes(request *ResmgmtRequest) (*peer.ChaincodeQueryResponse, error) {
 	return ResmgmtClient.Client.QueryInstantiatedChaincodes(
 		request.ChannelID,
-		resmgmt.WithTargetEndpoints(request.TargetPeer),
+		resmgmt.WithTargetEndpoints(request.TargetPeers...),
 	)
 }
 
