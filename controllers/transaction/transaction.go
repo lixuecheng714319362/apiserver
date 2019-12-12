@@ -35,14 +35,14 @@ func (c *InvokeController) Invoke() {
 		return
 	}
 	defer channelClient.CloseSDK()
-	res, err := channelClient.Invoke(req.CCID, req.Fcn, tool.ChangeArgs(req.Args), req.TargetPeers)
+	res, err := channelClient.Invoke(req, tool.ChangeArgs(req.Args),tool.ChangeTransientMap(req.TransientMap))
 	if err != nil {
 		beego.Error("invoke query err", err)
 		tool.BackResError(c.Controller, http.StatusBadRequest, err.Error())
 		return
 	}
-	beego.Info("invoke chainCode ccId:%s, txId:%s, statusCode:%v, args:%s, payload:%s", req.CCID, res.TransactionID,
-		res.ChaincodeStatus, tool.ChangeArgs(req.Args), string(res.Payload))
+	beego.Info("invoke chainCode ccId:",req.CCID,", txId:",res.TransactionID,", statusCode:",res.ChaincodeStatus,
+		", args:",tool.ChangeArgs(req.Args),", payload:", string(res.Payload))
 	tool.BackResData(c.Controller, res)
 	return
 }
@@ -62,7 +62,7 @@ func (c *InvokeController) Query() {
 		return
 	}
 	defer channelClient.CloseSDK()
-	res, err := channelClient.Query(req.CCID, req.Fcn, tool.ChangeArgs(req.Args))
+	res, err := channelClient.Query(req, tool.ChangeArgs(req.Args),tool.ChangeTransientMap(req.TransientMap))
 	if err != nil {
 		beego.Error("invoke query err", err)
 		tool.BackResError(c.Controller, http.StatusBadRequest, err.Error())
@@ -71,6 +71,32 @@ func (c *InvokeController) Query() {
 	beego.Info("query chainCode ", req.CCID, tool.ChangeArgs(req.Args), string(res.Payload))
 	beego.Debug("query result", res)
 	tool.BackResData(c.Controller, string(res.Payload))
+	return
+}
+func (c *InvokeController) QueryTx() {
+	defer tool.HanddlerError(c.Controller)
+	req, err := getReq(c)
+	if err != nil {
+		beego.Error("request json unmarshal failed ", err)
+		tool.BackResError(c.Controller, http.StatusForbidden, err.Error())
+		return
+	}
+	channelClient, err := gosdk.GetChannelClient(req)
+	if err != nil {
+		beego.Error("create resClient failed ", err)
+		tool.BackResError(c.Controller, http.StatusBadRequest, err.Error())
+		return
+	}
+	defer channelClient.CloseSDK()
+	res, err := channelClient.Query(req, tool.ChangeArgs(req.Args),tool.ChangeTransientMap(req.TransientMap))
+	if err != nil {
+		beego.Error("invoke query err", err)
+		tool.BackResError(c.Controller, http.StatusBadRequest, err.Error())
+		return
+	}
+	beego.Info("query chainCode ", req.CCID, tool.ChangeArgs(req.Args), string(res.Payload))
+	beego.Debug("query result", res)
+	tool.BackResData(c.Controller, res)
 	return
 }
 
@@ -102,14 +128,14 @@ func (c *InvokeController) InvokeFunc() {
 		return
 	}
 	//defer channelClient.CloseSDK() //该sdk复用
-	res, err := channelClient.Invoke(req.CCID, req.Fcn, tool.ChangeArgs(req.Args), req.TargetPeers)
+	res, err := channelClient.Invoke(req, tool.ChangeArgs(req.Args),tool.ChangeTransientMap(req.TransientMap))
 	if err != nil {
 		beego.Error("invoke query err", err)
 		tool.BackResError(c.Controller, http.StatusBadRequest, err.Error())
 		return
 	}
-	beego.Info("invoke chainCode ccId:%s, txId:%s, statusCode:%v, args:%s, payload:%s", req.CCID, res.TransactionID,
-		res.ChaincodeStatus, tool.ChangeArgs(req.Args), string(res.Payload))
+	beego.Info("invoke chainCode ccId:",req.CCID,", txId:",res.TransactionID,", statusCode:",res.ChaincodeStatus,
+		", args:",tool.ChangeArgs(req.Args),", payload:", string(res.Payload))
 	tool.BackResData(c.Controller, res)
 	return
 }
@@ -243,7 +269,7 @@ func (s *Tx) Do() {
 	req.Args[0] = strconv.Itoa(100000000 + s.Top)
 	h := sha256.Sum256([]byte(strconv.Itoa(100000000 + s.Top)))
 	req.Args[1] = hex.EncodeToString(h[:])
-	_, err = InvokeClient.Invoke(req.CCID, req.Fcn, tool.ChangeArgs(req.Args), nil)
+	_, err = InvokeClient.Invoke(req, tool.ChangeArgs(req.Args),tool.ChangeTransientMap(req.TransientMap))
 	if err != nil {
 		beego.Error("exec error ", err)
 	}

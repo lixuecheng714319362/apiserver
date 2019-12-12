@@ -51,8 +51,8 @@ func (c *LedgerController) QueryInfo() {
 		tool.BackResError(c.Controller, http.StatusBadRequest, err.Error())
 		return
 	}
-	beego.Info("query channel info  status:%d, block:%d, current block hash:%s",
-		res.Status, res.BCI.Height, hex.EncodeToString(res.BCI.CurrentBlockHash))
+	beego.Info("query channel info  status:",res.Status,", block:", res.BCI.Height,", current block hash:",
+		 hex.EncodeToString(res.BCI.CurrentBlockHash))
 	beego.Debug(res)
 	tool.BackResData(c.Controller, res.BCI)
 	return
@@ -222,7 +222,7 @@ func (c *LedgerController) QueryBlockByRange() {
 	}
 	defer LedgerClient.CloseSDK()
 
-	res, err := getBlockbyRange(req.Start, req.End, LedgerClient)
+	res, err := getBlockbyRangeGO(req.Start, req.End, LedgerClient)
 	if err != nil {
 		beego.Error("get block by range failed ", err)
 		tool.BackResError(c.Controller, http.StatusBadRequest, err.Error())
@@ -325,10 +325,8 @@ func getReq(c *LedgerController) (*gosdk.LedgerRequest, error) {
 	return reqData, nil
 }
 
-
-
-func getBlockbyRange(start uint64, end uint64, LedgerClient *gosdk.LedgerClient) ([]*Block, error) {
-	beego.Debug("start getblockrange", time.Now().Unix())
+func getBlockbyRangeGO(start uint64, end uint64, LedgerClient *gosdk.LedgerClient) ([]*Block, error) {
+	beego.Debug("start get block range with goroutine", time.Now().Unix())
 	var res = make([]*Block, end-start+1)
 	var wg sync.WaitGroup
 	//异步获取所有区块
@@ -360,6 +358,31 @@ func getBlockbyRange(start uint64, end uint64, LedgerClient *gosdk.LedgerClient)
 	wg.Wait()
 	if flag == false {
 		return nil, errors.New("get block error")
+	}
+	beego.Debug("end getblockrange", time.Now().Unix())
+	return res, nil
+}
+
+func getBlockbyRange(start uint64, end uint64, LedgerClient *gosdk.LedgerClient) ([]*Block, error) {
+	beego.Debug("start getblockrange", time.Now().Unix())
+	var res = make([]*Block, end-start+1)
+	for i := start; i <= end; i++ {
+		for k := 0; ; k++ {
+			b, err := LedgerClient.QueryBlockByNumber(i)
+			if err != nil {
+				if k > 3 {
+					break
+				} else {
+					continue
+				}
+			}
+			block, err := Getinfo(b)
+			if err!=nil{
+				return nil ,errors.New("get block info error")
+			}
+			res[i-start] = block
+			break
+		}
 	}
 	beego.Debug("end getblockrange", time.Now().Unix())
 	return res, nil

@@ -24,7 +24,6 @@ func init() {
 					beego.NSRouter("/test", &ledger.LedgerController{}, "post:QueryBlockByNumberTest"),
 				),
 
-
 				beego.NSNamespace("/chaincode",
 					beego.NSRouter("/install", &chaincode.CcController{}, "post:InstallChainCode"),
 					beego.NSRouter("/instantiate", &chaincode.CcController{}, "post:InstantiateChainCode"),
@@ -34,7 +33,6 @@ func init() {
 						beego.NSRouter("/instantiate", &chaincode.CcController{}, "post:QueryInstantiateChainCode"),
 					),
 				),
-
 
 				beego.NSNamespace("/channel",
 					beego.NSRouter("/create", &channel.ChanController{}, "post:CreateChannel"),
@@ -47,6 +45,7 @@ func init() {
 				beego.NSNamespace("/transaction",
 					beego.NSRouter("/invoke", &transaction.InvokeController{}, "post:Invoke"),
 					beego.NSRouter("/query", &transaction.InvokeController{}, "post:Query"),
+					beego.NSRouter("/query-tx", &transaction.InvokeController{}, "post:QueryTx"),
 					beego.NSRouter("/empty", &transaction.InvokeController{}, "post:InvokeEmpty"),
 					beego.NSRouter("/func", &transaction.InvokeController{}, "post:InvokeFunc"),
 				),

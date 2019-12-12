@@ -177,7 +177,7 @@ func (ResmgmtClient *ResmgmtClient) ChainCodeInit(request *ResmgmtRequest) (resm
 	colConfigs := make([]*common.CollectionConfig, 0)
 	if request.CollectionConfig != nil {
 		for _, v := range request.CollectionConfig {
-			cf, err := utils.NewCollectionConfig(v.Name, v.MemberOrgsPolicy, v.RequiredPeerCount, v.MaximumPeerCount, v.BlockToLive)
+			cf, err := utils.NewCollectionConfig(v.Name, v.MemberOrgsPolicy, v.RequiredPeerCount, v.MaximumPeerCount, v.BlockToLive,v.MemberOnlyRead)
 			if err != nil {
 				return resmgmt.InstantiateCCResponse{}, err
 			}
@@ -213,7 +213,7 @@ func (ResmgmtClient *ResmgmtClient) ChainCodeUpgrade(request *ResmgmtRequest) (r
 	colConfig := make([]*common.CollectionConfig, 0)
 	if request.CollectionConfig != nil {
 		for _, v := range request.CollectionConfig {
-			cf, err := utils.NewCollectionConfig(v.Name, v.MemberOrgsPolicy, v.RequiredPeerCount, v.MaximumPeerCount, v.BlockToLive)
+			cf, err := utils.NewCollectionConfig(v.Name, v.MemberOrgsPolicy, v.RequiredPeerCount, v.MaximumPeerCount, v.BlockToLive,v.MemberOnlyRead)
 			if err != nil {
 				return resmgmt.UpgradeCCResponse{}, err
 			}
@@ -228,6 +228,7 @@ func (ResmgmtClient *ResmgmtClient) ChainCodeUpgrade(request *ResmgmtRequest) (r
 		Version: request.CCVersion,
 		Args:    tool.ChangeArgs(request.Args),
 		Policy:  ccPolicy,
+		CollConfig:colConfig,
 	}
 	return ResmgmtClient.Client.UpgradeCC(
 		request.ChannelID,

@@ -15,8 +15,9 @@ type CollectionConfig struct {
 	RequiredPeerCount 	int32
 	MaximumPeerCount  	int32
 	BlockToLive		  	uint64
+	MemberOnlyRead		bool
 }
-func NewCollectionConfig(colName, policy string, reqPeerCount, maxPeerCount int32, blockToLive uint64) (*common.CollectionConfig, error) {
+func NewCollectionConfig(colName, policy string, reqPeerCount, maxPeerCount int32, blockToLive uint64,memberOnlyRead bool) (*common.CollectionConfig, error) {
 	p, err := cauthdsl.FromString(policy)
 	if err != nil {
 		return nil, err
@@ -34,6 +35,7 @@ func NewCollectionConfig(colName, policy string, reqPeerCount, maxPeerCount int3
 				RequiredPeerCount: reqPeerCount,
 				MaximumPeerCount:  maxPeerCount,
 				BlockToLive:       blockToLive,
+				MemberOnlyRead: memberOnlyRead,
 			},
 		},
 	}, nil

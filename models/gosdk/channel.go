@@ -24,6 +24,8 @@ type ChannelRequest struct {
 	Fcn         string //OrdID
 	Args        []string
 	TargetPeers []string
+	TransientMap map[string]string
+
 }
 
 // 创建通道客户端
@@ -46,28 +48,31 @@ func GetChannelClient(channelRequest *ChannelRequest) (*ChannelClient, error) {
 	}, nil
 }
 
-func (ChannelClient *ChannelClient) Query(chainCodeID, Fcn string, args [][]byte) (channel.Response, error) {
+func (ChannelClient *ChannelClient) Query(channelRequest *ChannelRequest, args [][]byte,transientMap map[string][]byte) (channel.Response, error) {
 	//TODO
 	//TransientMap、InvocationChain功能
 	return ChannelClient.Client.Query(
 		channel.Request{
-			ChaincodeID: chainCodeID,
-			Fcn:         Fcn,
+			ChaincodeID: channelRequest.CCID,
+			Fcn:         channelRequest.Fcn,
 			Args:        args,
+			TransientMap: transientMap,
 		},
+		channel.WithTargetEndpoints(channelRequest.TargetPeers...),
 	)
 }
 
-func (ChannelClient *ChannelClient) Invoke(chainCodeID, Fcn string, args [][]byte,targetPeers []string) (channel.Response, error) {
+func (ChannelClient *ChannelClient) Invoke(channelRequest *ChannelRequest, args [][]byte,transientMap map[string][]byte) (channel.Response, error) {
 	//TODO
 	//TransientMap、InvocationChain功能
 	return ChannelClient.Client.Execute(
 		channel.Request{
-			ChaincodeID: chainCodeID,
-			Fcn:         Fcn,
+			ChaincodeID: channelRequest.CCID,
+			Fcn:         channelRequest.Fcn,
 			Args:        args,
+			TransientMap: transientMap,
 		},
-		channel.WithTargetEndpoints(targetPeers...),
+		channel.WithTargetEndpoints(channelRequest.TargetPeers...),
 	)
 }
 
