@@ -4,6 +4,7 @@ import (
 	"apiserver/controllers/tool"
 	"apiserver/filter"
 	"apiserver/models/gosdk"
+	"apiserver/models/gosdk/tool/blockdata"
 	redismodel "apiserver/models/redis"
 	"crypto/sha256"
 	"encoding/hex"
@@ -96,9 +97,49 @@ func (c *InvokeController) QueryTx() {
 	}
 	beego.Info("query chainCode ", req.CCID, tool.ChangeArgs(req.Args), string(res.Payload))
 	beego.Debug("query result", res)
-	tool.BackResData(c.Controller, res)
+	cr,err:=blockdata.GetChannelResposeInfo(&res)
+	if err != nil {
+		beego.Error("decode channel response info ", err)
+		tool.BackResError(c.Controller, http.StatusBadRequest, err.Error())
+		return
+	}
+	tool.BackResData(c.Controller, cr)
 	return
 }
+
+func (c *InvokeController) QueryTest() {
+	defer tool.HanddlerError(c.Controller)
+	req, err := getReq(c)
+	if err != nil {
+		beego.Error("request json unmarshal failed ", err)
+		tool.BackResError(c.Controller, http.StatusForbidden, err.Error())
+		return
+	}
+	channelClient, err := gosdk.GetChannelClient(req)
+	if err != nil {
+		beego.Error("create resClient failed ", err)
+		tool.BackResError(c.Controller, http.StatusBadRequest, err.Error())
+		return
+	}
+	defer channelClient.CloseSDK()
+	res, err := channelClient.Query(req, tool.ChangeArgs(req.Args),tool.ChangeTransientMap(req.TransientMap))
+	if err != nil {
+		beego.Error("invoke query err", err)
+		tool.BackResError(c.Controller, http.StatusBadRequest, err.Error())
+		return
+	}
+	beego.Info("query chainCode ", req.CCID, tool.ChangeArgs(req.Args), string(res.Payload))
+	beego.Debug("query result", res)
+	cr,err:=blockdata.GetChannelResposeInfo(&res)
+	if err != nil {
+		beego.Error("decode channel response info ", err)
+		tool.BackResError(c.Controller, http.StatusBadRequest, err.Error())
+		return
+	}
+	tool.BackResData(c.Controller, cr)
+	return
+}
+
 
 func (c *InvokeController) InvokeEmpty() {
 	defer tool.HanddlerError(c.Controller)

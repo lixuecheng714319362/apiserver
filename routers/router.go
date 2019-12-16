@@ -46,6 +46,7 @@ func init() {
 					beego.NSRouter("/invoke", &transaction.InvokeController{}, "post:Invoke"),
 					beego.NSRouter("/query", &transaction.InvokeController{}, "post:Query"),
 					beego.NSRouter("/query-tx", &transaction.InvokeController{}, "post:QueryTx"),
+					beego.NSRouter("/query-test", &transaction.InvokeController{}, "post:QueryTest"),
 					beego.NSRouter("/empty", &transaction.InvokeController{}, "post:InvokeEmpty"),
 					beego.NSRouter("/func", &transaction.InvokeController{}, "post:InvokeFunc"),
 				),

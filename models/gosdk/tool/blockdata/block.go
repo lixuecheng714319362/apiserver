@@ -6,114 +6,12 @@ import (
 	"fmt"
 	"github.com/gogo/protobuf/proto"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
-	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/msp"
+	common2 "github.com/hyperledger/fabric/protos/common"
 	"github.com/hyperledger/fabric/protos/ledger/rwset"
 	"github.com/hyperledger/fabric/protos/ledger/rwset/kvrwset"
 	pb "github.com/hyperledger/fabric/protos/peer"
 	"github.com/hyperledger/fabric/protos/utils"
 )
-
-type Chain struct {
-	Height int64
-}
-
-type Block struct {
-	Header            *BlockHead
-	TransactionNumber int
-	Transaction       []*Transaction
-	TransactionsFilter		[]uint8
-}
-
-type BlockHead struct {
-	Number           uint64
-	CurrentBlockHash []byte
-	PreviousHash     []byte
-	DataHash         []byte
-}
-
-type Transaction struct {
-	Header *Header
-
-	Actions []*Action
-}
-type Action struct {
-	Header            *Header
-	CCProposalPayload *CCProposalPayload
-	CCResponsePayload *CCResponsePayload
-	TransientMap      map[string][]byte
-}
-type CCResponsePayload struct {
-	ProposalHash []byte
-
-	NsRwSets []*NsRwSets
-
-	ReponseStatus   int32
-	ReponseMessage  string
-	ReponsePlayload []byte
-}
-type NsRwSets struct {
-	NameSpace        string
-	Reads            []*kvrwset.KVRead
-	Writes           []*KVWrite
-	RangeQueriesInfo []*kvrwset.RangeQueryInfo
-	MetadataWrites   []*kvrwset.KVMetadataWrite
-}
-
-type KVWrite struct {
-	Key string
-	IsDelete bool
-	Value string
-}
-
-type CCProposalPayload struct {
-	CCtype      string
-	CCPath      string
-	CCID        string
-	CCVersion   string
-	TxArgs      []string
-	Decorations map[string][]byte
-	Timeout     int32
-	Method      string
-}
-type Header struct {
-	ChannelHeader   *ChannelHeader
-	SignatureHeader *SignatureHeader
-}
-type SignatureHeader struct {
-	Creator *Creater
-	Nonce   []byte
-}
-
-type Creater struct {
-	MSPID   string
-	IdBytes []byte
-}
-
-type ChannelHeader struct {
-	Type        string
-	Version     int32
-	Timestamp   int64
-	Nanos       int32
-	ChannelId   string
-	TxId        string
-	Epoch       uint64
-	Extension   []byte
-	TlsCertHash []byte
-}
-
-type ChainTxEvents struct {
-	TxID, Chaincode, Name string
-	Status                int
-	Payload               []byte
-}
-
-type ChainBlock struct {
-	Height       int64 `json:",string"`
-	Hash         string
-	TimeStamp    string
-	Transactions []*Transaction
-	TxEvents     []*ChainTxEvents
-}
 
 func Getinfo(thisBlock *common.Block) (*Block, error) {
 
@@ -146,7 +44,7 @@ func Getinfo(thisBlock *common.Block) (*Block, error) {
 			return nil, err
 		}
 
-		chainTransaction, err := EnvelopeToTrasaction((*common.Envelope)(env))
+		chainTransaction, err := EnvelopeToTrasaction(env)
 		if err != nil {
 			return nil, err
 		}
@@ -160,18 +58,21 @@ func Getinfo(thisBlock *common.Block) (*Block, error) {
 
 }
 
-func EnvelopeToTrasaction(env *common.Envelope) (*Transaction, error) {
+func EnvelopeToTrasaction(env *common2.Envelope) (*Transaction, error) {
 	transaction := &Transaction{}
 
 	var err error
 	if env == nil {
 		return nil, errors.New("<-common.Envelope is nil")
 	}
-	payl := &common.Payload{}
+
+	//payl := &common.Payload{}
+	payl,err:=utils.GetPayload(env)
 	err = proto.Unmarshal(env.Payload, payl)
 	if err != nil {
 		return nil, err
 	}
+
 	if payl.Header == nil {
 		return nil, errors.New("<-  payl head nil")
 	}
@@ -180,6 +81,8 @@ func EnvelopeToTrasaction(env *common.Envelope) (*Transaction, error) {
 		return nil, err
 	}
 	transaction.Header = header
+
+
 
 	tx := &pb.Transaction{}
 	err = proto.Unmarshal(payl.Data, tx)
@@ -193,21 +96,10 @@ func EnvelopeToTrasaction(env *common.Envelope) (*Transaction, error) {
 			CCResponsePayload: &CCResponsePayload{},
 		}
 
-		actionheader := &common.Header{}
-		err = proto.Unmarshal(v.Header, actionheader)
-		if err != nil {
-			return nil, err
-		}
-		//header,err:=getHander(actionheader)
-		//if err != nil {
-		//	return nil,err
-		//}
-		//action.Header=header
-
-		chaincodeActionPayload := &pb.ChaincodeActionPayload{}
-		err = proto.Unmarshal(v.Payload, chaincodeActionPayload)
-		if err != nil {
-			return nil, err
+		chainCodeActionPayload, repExtension,err:=utils.GetPayloads(v)
+		actionHeader,err:=UnmarshalSignatureHeader(v.Header)
+		if err == nil {
+			action.Header=actionHeader
 		}
 
 		if transaction.Header.ChannelHeader.Type == "CONFIG" {
@@ -216,29 +108,29 @@ func EnvelopeToTrasaction(env *common.Envelope) (*Transaction, error) {
 			return transaction, nil
 		}
 
-		if chaincodeActionPayload.Action != nil {
+		if chainCodeActionPayload.Action != nil {
 			proposalResponsePayload := &pb.ProposalResponsePayload{}
-			err = proto.Unmarshal(chaincodeActionPayload.Action.ProposalResponsePayload, proposalResponsePayload)
+			err = proto.Unmarshal(chainCodeActionPayload.Action.ProposalResponsePayload, proposalResponsePayload)
 			if err != nil {
 				//block 0  区块会报错
 				return nil, err
 			}
 			action.CCResponsePayload.ProposalHash = proposalResponsePayload.ProposalHash
 
-			repextension := &pb.ChaincodeAction{}
-			err = proto.Unmarshal(proposalResponsePayload.Extension, repextension)
-			if err != nil {
-				return nil, err
-			}
+			//repExtension := &pb.ChaincodeAction{}
+			//err = proto.Unmarshal(proposalResponsePayload.Extension, repExtension)
+			//if err != nil {
+			//	return nil, err
+			//}
 
-			if repextension.Response != nil {
-				action.CCResponsePayload.ReponseStatus = repextension.Response.Status
-				action.CCResponsePayload.ReponseMessage = repextension.Response.Message
-				action.CCResponsePayload.ReponsePlayload = repextension.Response.Payload
+			if repExtension.Response != nil {
+				action.CCResponsePayload.ReponseStatus = repExtension.Response.Status
+				action.CCResponsePayload.ReponseMessage = repExtension.Response.Message
+				action.CCResponsePayload.ReponsePlayload = repExtension.Response.Payload
 			}
 
 			resault := &rwset.TxReadWriteSet{}
-			err = proto.Unmarshal(repextension.Results, resault)
+			err = proto.Unmarshal(repExtension.Results, resault)
 			if err != nil {
 				return nil, err
 			}
@@ -261,16 +153,13 @@ func EnvelopeToTrasaction(env *common.Envelope) (*Transaction, error) {
 				nsRwSet.MetadataWrites = kv.MetadataWrites
 				nsRwSet.RangeQueriesInfo = kv.RangeQueriesInfo
 				action.CCResponsePayload.NsRwSets = append(action.CCResponsePayload.NsRwSets, nsRwSet)
-				//for _, v := range kv.Writes {
-				//	fmt.Println("__________________",string(v.Value))
-				//}
 			}
 
 		}
 
-		if chaincodeActionPayload.ChaincodeProposalPayload != nil {
+		if chainCodeActionPayload.ChaincodeProposalPayload != nil {
 			chaincodeProposalPayload := &pb.ChaincodeProposalPayload{}
-			err = proto.Unmarshal(chaincodeActionPayload.ChaincodeProposalPayload, chaincodeProposalPayload)
+			err = proto.Unmarshal(chainCodeActionPayload.ChaincodeProposalPayload, chaincodeProposalPayload)
 			if err != nil {
 				return nil, err
 			}
@@ -309,59 +198,11 @@ func EnvelopeToTrasaction(env *common.Envelope) (*Transaction, error) {
 	return transaction, nil
 }
 
-func getHander(cheader *common.Header) (*Header, error) {
-	header := &Header{
-		ChannelHeader:   &ChannelHeader{},
-		SignatureHeader: &SignatureHeader{},
-	}
-	channelHeader := &common.ChannelHeader{}
-	sig := &common.SignatureHeader{}
-	err := proto.Unmarshal(cheader.ChannelHeader, channelHeader)
-	if err != nil {
-		return nil, err
-	}
-	err = proto.Unmarshal(cheader.SignatureHeader, sig)
-	if err != nil {
-		return nil, err
-	}
-	header.ChannelHeader = &ChannelHeader{
-		Type:    common.HeaderType(channelHeader.Type).String(),
-		Version: channelHeader.Version,
 
-		ChannelId:   channelHeader.ChannelId,
-		TxId:        channelHeader.TxId,
-		Epoch:       channelHeader.Epoch,
-		Extension:   channelHeader.Extension,
-		TlsCertHash: channelHeader.TlsCertHash,
-	}
 
-	if channelHeader.Timestamp != nil {
-		header.ChannelHeader.Timestamp = channelHeader.Timestamp.Seconds
-		header.ChannelHeader.Nanos = channelHeader.Timestamp.Nanos
-	}
 
-	var creater *Creater
-	if sig.Creator != nil {
-		serial := msp.SerializedIdentity{}
-		err := proto.Unmarshal(sig.Creator, &serial)
-		if err != nil {
-			creater = nil
-		} else {
-			creater = &Creater{
-				MSPID:   serial.Mspid,
-				IdBytes: serial.IdBytes,
-			}
-			//
-			//fmt.Println(serial.Mspid, "\n", string(serial.IdBytes))
 
-		}
-	}
-	header.SignatureHeader = &SignatureHeader{
-		Creator: creater,
-		Nonce:   sig.Nonce,
-	}
-	return header, err
-}
+
 
 // blockToChainCodeEvents parses block events for chaincode events associated with individual transactions
 func BlockToChainCodeEvents(block *common.Block) []*pb.ChaincodeEvent {
