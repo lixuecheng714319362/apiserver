@@ -1,0 +1,106 @@
+---
+name: myorderer-service-network
+version: 1.1.0
+client:
+  organization: Org1MSP
+  logging:
+    level: info
+  cryptoconfig:
+    path: /root/fabric/configs/crypto-config
+  credentialStore:
+    path: /tmp/single-service-store
+    cryptoStore:
+      path: /tmp/single-service-msp
+  BCCSP:
+    security:
+      enabled: true
+      default:
+        provider: SW
+      hashAlgorithm: SHA2
+      softVerify: true
+      level: 256
+  tlsCerts:
+    systemCertPool: true
+    client:
+      keyfile: /root/fabric/configs/crypto-config/peerOrganizations/org1/users/Admin@org1/tls/service.key
+      certfile: /root/fabric/configs/crypto-config/peerOrganizations/org1/users/Admin@org1/tls/client.crt
+channels:
+  mychannel:
+    peers:
+      peer1:
+        endorsingPeer: true
+        chaincodeQuery: true
+        ledgerQuery: true
+        #是否等待事件返回，false不会因为query 不存在的key导致超时
+        eventSource: false
+    policies:
+      queryChannelConfig:
+        minResponses: 1
+        maxTargets: 1
+        retryOpts:
+          attempts: 1
+          initialBackoff: 500ms
+          maxBackoff: 2s
+          backoffFactor: 2.000000
+organizations:
+  Org1MSP:
+    mspid: Org1MSP
+    cryptoPath: /root/fabric/configs/crypto-config/peerOrganizations/org1/users/{username}@org1/msp
+    peers:
+      - peer1
+  BaoquanMSP:
+    mspID: BaoquanMSP
+    cryptoPath: /root/fabric/configs/crypto-config/ordererOrganizations/baoquan.com/users/Admin@baoquan.com/msp
+peers:
+  peer1:
+    #apiserver部署在节点所在机子或节点所在网络中，尽量使用本地回环地址或内网ip提高访问速度。
+    url: grpcs://127.0.0.1:7051
+    grpcOptions:
+      ssl-target-name-override: peer1.org1
+      allow-insecure: false
+    tlsCACerts:
+      path: /root/fabric/configs/crypto-config/peerOrganizations/org1/tlsca/tlsca.org1-cert.pem
+entityMatchers:
+  peer:
+    - pattern: (\w*)peer0.org1(\w*)
+      urlSubstitutionExp: 112.74.245.133:7051
+      eventUrlSubstitutionExp: 112.74.245.133:7051
+      sslTargetOverrideUrlSubstitutionExp: peer0.org1
+      mappedHost: peer0.org1
+    - pattern: (\w*)peer1.org1(\w*)
+      urlSubstitutionExp: 127.0.0.1:7051
+      eventUrlSubstitutionExp: 127.0.0.1:7051
+      sslTargetOverrideUrlSubstitutionExp: peer1.org1
+      mappedHost: peer1.org1
+  orderer:
+    - pattern: (\w*)orderer1.baoquan.com(\w*)
+      urlSubstitutionExp: 112.74.241.7:7050
+      sslTargetOverrideUrlSubstitutionExp: orderer1.baoquan.com
+      mappedHost: orderer1.baoquan.com
+    - pattern: (\w*)orderer2.baoquan.com(\w*)
+      urlSubstitutionExp: 112.74.247.246:7050
+      sslTargetOverrideUrlSubstitutionExp: orderer2.baoquan.com
+      mappedHost: orderer2.baoquan.com
+orderers:
+  orderer1:
+    url: grpcs://112.74.241.7:7050
+    grpcOptions:
+      ssl-target-name-override: orderer1.baoquan.com
+      keep-alive-time: 5s
+      keep-alive-timeout: 6s
+      keep-alive-permit: false
+      fail-fast: true
+      allow-insecure: false
+    tlsCACerts:
+      path: /root/fabric/configs/crypto-config/ordererOrganizations/baoquan.com/orderers/orderer1.baoquan.com/msp/tlscacerts/tlsca.baoquan.com-cert.pem
+  orderer2:
+    url: grpcs://112.74.247.246:7050
+    grpcOptions:
+      ssl-target-name-override: orderer2.baoquan.com
+      keep-alive-time: 5s
+      keep-alive-timeout: 6s
+      keep-alive-permit: false
+      fail-fast: true
+      allow-insecure: false
+    tlsCACerts:
+      path: /root/fabric/configs/crypto-config/ordererOrganizations/baoquan.com/orderers/orderer2.baoquan.com/msp/tlscacerts/tlsca.baoquan.com-cert.pem

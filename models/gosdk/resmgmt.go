@@ -80,21 +80,27 @@ func (ResmgmtClient *ResmgmtClient) CreateNewChannel(request *ResmgmtRequest) ( 
 	var err error
 	var reader io.Reader
 	var signer []msp.SigningIdentity
+	var saveChannelReq resmgmt.SaveChannelRequest
 	if request.ChannelTxPath == "" {
 
-		if reader,err=GetCreateChannelReader(request.ChannelID,request.OrgNameList);err!=nil {
-			return resmgmt.SaveChannelResponse{},err
+		if reader, err = GetCreateChannelReader(request.ChannelID, request.OrgNameList); err != nil {
+			return resmgmt.SaveChannelResponse{}, err
 		}
-		if signer,err=GetCreateChannelSinger(request.SingerMap,ResmgmtClient.SDK);err != nil {
-			return resmgmt.SaveChannelResponse{},err
+		if signer, err = GetCreateChannelSinger(request.SingerMap, ResmgmtClient.SDK); err != nil {
+			return resmgmt.SaveChannelResponse{}, err
 		}
+		saveChannelReq = resmgmt.SaveChannelRequest{
+			ChannelID:         request.ChannelID,
+			ChannelConfig:     reader,
+			SigningIdentities: signer,
+		}
+	}else {
+			saveChannelReq = resmgmt.SaveChannelRequest{
+				ChannelID:         request.ChannelID,
+				ChannelConfigPath: request.ChannelTxPath,
+			}
 	}
 
-	saveChannelReq := resmgmt.SaveChannelRequest{
-		ChannelID:         request.ChannelID,
-		ChannelConfig:     reader,
-		SigningIdentities: signer,
-	}
 	return ResmgmtClient.Client.SaveChannel(saveChannelReq, resmgmt.WithOrdererEndpoint(request.TargetOrderer))
 }
 

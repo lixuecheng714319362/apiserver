@@ -43,7 +43,7 @@ func (c *InvokeController) Invoke() {
 		return
 	}
 	beego.Info("invoke chainCode ccId:",req.CCID,", txId:",res.TransactionID,", statusCode:",res.ChaincodeStatus,
-		", args:",tool.ChangeArgs(req.Args),", payload:", string(res.Payload))
+		", args:",req.Args,", payload:", string(res.Payload))
 	tool.BackResData(c.Controller, res)
 	return
 }
@@ -69,8 +69,7 @@ func (c *InvokeController) Query() {
 		tool.BackResError(c.Controller, http.StatusBadRequest, err.Error())
 		return
 	}
-	beego.Info("query chainCode ", req.CCID, tool.ChangeArgs(req.Args), string(res.Payload))
-	beego.Debug("query result", res)
+	beego.Info("query chainCode ", req.CCID, req.Args, string(res.Payload))
 	tool.BackResData(c.Controller, string(res.Payload))
 	return
 }
@@ -95,8 +94,7 @@ func (c *InvokeController) QueryTx() {
 		tool.BackResError(c.Controller, http.StatusBadRequest, err.Error())
 		return
 	}
-	beego.Info("query chainCode ", req.CCID, tool.ChangeArgs(req.Args), string(res.Payload))
-	beego.Debug("query result", res)
+	beego.Info("query chainCode ", req.CCID, req.Args, string(res.Payload))
 	cr,err:=blockdata.GetChannelResposeInfo(&res)
 	if err != nil {
 		beego.Error("decode channel response info ", err)
@@ -128,15 +126,8 @@ func (c *InvokeController) QueryTest() {
 		tool.BackResError(c.Controller, http.StatusBadRequest, err.Error())
 		return
 	}
-	beego.Info("query chainCode ", req.CCID, tool.ChangeArgs(req.Args), string(res.Payload))
-	beego.Debug("query result", res)
-	cr,err:=blockdata.GetChannelResposeInfo(&res)
-	if err != nil {
-		beego.Error("decode channel response info ", err)
-		tool.BackResError(c.Controller, http.StatusBadRequest, err.Error())
-		return
-	}
-	tool.BackResData(c.Controller, cr)
+	beego.Info("query chainCode ", req.CCID, req.Args, string(res.Payload))
+	tool.BackResData(c.Controller, res)
 	return
 }
 
@@ -176,7 +167,7 @@ func (c *InvokeController) InvokeFunc() {
 		return
 	}
 	beego.Info("invoke chainCode ccId:",req.CCID,", txId:",res.TransactionID,", statusCode:",res.ChaincodeStatus,
-		", args:",tool.ChangeArgs(req.Args),", payload:", string(res.Payload))
+		", args:",req.Args,", payload:", string(res.Payload))
 	tool.BackResData(c.Controller, res)
 	return
 }

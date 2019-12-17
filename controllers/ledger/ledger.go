@@ -51,9 +51,8 @@ func (c *LedgerController) QueryInfo() {
 		tool.BackResError(c.Controller, http.StatusBadRequest, err.Error())
 		return
 	}
-	beego.Info("query channel info  status:",res.Status,", block:", res.BCI.Height,", current block hash:",
+	beego.Info("query channel info  status:",res.Status,", block height:", res.BCI.Height,", current block hash:",
 		 hex.EncodeToString(res.BCI.CurrentBlockHash))
-	beego.Debug(res)
 	tool.BackResData(c.Controller, res.BCI)
 	return
 }
@@ -97,7 +96,6 @@ func (c *LedgerController) QueryConfig() {
 		AnchorPeers: res.AnchorPeers(),
 	}
 	beego.Info("query channel config", "channel id is ", res.ID())
-	beego.Debug(res)
 	tool.BackResData(c.Controller, channelcfg)
 	return
 }
@@ -200,7 +198,7 @@ func (c *LedgerController) QueryBlockByNumber() {
 		tool.BackResError(c.Controller, http.StatusBadRequest, err.Error())
 		return
 	}
-	beego.Info("query block info ,block number is", res.Header.Number)
+	beego.Info("query block info ,block number is", req.BlockNumber)
 	tool.BackResData(c.Controller, b)
 	return
 }
@@ -234,22 +232,6 @@ func (c *LedgerController) QueryBlockByRange() {
 	return
 }
 
-//func getBlockHashBynumber(client *gosdk.LedgerClient, number uint64) ([]byte, error) {
-//	info, err := client.QueryInfo()
-//	if err != nil {
-//		return nil, err
-//	}
-//	if info.BCI.Height-1 == number {
-//		return info.BCI.CurrentBlockHash, nil
-//	} else if info.BCI.Height-2 == number {
-//		return info.BCI.PreviousBlockHash, nil
-//	}
-//	b, err := client.QueryBlockByNumber(number + 1)
-//	if err != nil {
-//		return nil, err
-//	}
-//	return b.Header.PreviousHash, nil
-//}
 
 func (c *LedgerController) QueryBlockByNumberTest() {
 	defer tool.HanddlerError(c.Controller)
@@ -289,6 +271,7 @@ func (c *LedgerController) QueryBlockByNumberTest() {
 	if err != nil {
 		fmt.Println("Deep Marshal Json error", err)
 	}
+
 	b, err := blockdata.Getinfo(res)
 	if err != nil {
 		beego.Error("get block info err", err)
@@ -296,8 +279,6 @@ func (c *LedgerController) QueryBlockByNumberTest() {
 		return
 	}
 	beego.Info("query block test ,block number is", res.Header.Number)
-	beego.Debug(b)
-	beego.Debug()
 	tool.BackResData(c.Controller, b)
 	return
 }
