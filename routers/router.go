@@ -37,8 +37,14 @@ func init() {
 				beego.NSNamespace("/channel",
 					beego.NSRouter("/create", &channel.ChanController{}, "post:CreateChannel"),
 					beego.NSRouter("/new", &channel.ChanController{}, "post:CreateNewChannel"),
+
+					beego.NSNamespace("/update",
+						beego.NSRouter("/add-org", &channel.ChanController{}, "post:AddOrgUpdateChannel"),
+
+						),
+
+
 					beego.NSRouter("/join", &channel.ChanController{}, "post:JoinChannel"),
-					//beego.NSRouter("/update", &app.AppController{}, "post:UpdateChannel"),
 					beego.NSRouter("/query", &channel.ChanController{}, "post:QueryChannel"),
 				),
 

@@ -1,0 +1,262 @@
+name: "O1P0-service-network"
+version: 1.1.0
+
+#//用于构建clinet
+client:
+  organization: ShuQinOrgOne
+  logging:
+    level: info
+  cryptoconfig:
+    path: /root/projectMod/apiserver/artifacts/shuqin/crypto-config
+  credentialStore:
+    path: /tmp/sdk/O1P0-service-store
+    cryptoStore:
+      path: /tmp/sdk/O1P0-service-msp
+  BCCSP:
+    security:
+      enabled: true
+      default:
+        provider: "SW"
+      hashAlgorithm: "SHA2"
+      softVerify: true https://www.showdoc.cc/611133378323845?page_id=3590670572913538
+      level: 256
+  tlsCerts:
+    systemCertPool: true
+    client:
+      keyfile: /root/projectMod/apiserver/artifacts/shuqin/crypto-config/peerOrganizations/shuqinorgone.com/users/Admin@shuqinorgone.com/tls/client.key
+      certfile: /root/projectMod/apiserver/artifacts/shuqin/crypto-config/peerOrganizations/shuqinorgone.com/users/Admin@shuqinorgone.com/tls/client.crt
+# 用于构建channel client
+# 1、创建channel客户端实例
+# 2、权限控制
+# 3、获取channel配置
+# ps：用户channel，若是static discovery service模式，则来这找channel、order、endorser
+
+channels:
+  mychannel:
+    policies:
+      discovery:
+        retryOpts:
+          attempts: 4
+          initialBackoff: 1s
+      eventService:
+        resolverStrategy: PreferOrg
+        balancer: RoundRobin
+        blockHeightLagThreshold: 2
+        reconnectBlockHeightLagThreshold: 5
+        peerMonitorPeriod: 3s
+
+
+#channels:
+#  mychannel:
+    peers:
+      peer0:
+        endorsingPeer: true
+        chaincodeQuery: true
+        ledgerQuery: true
+        eventSource: true
+      peer1:
+        endorsingPeer: true
+        chaincodeQuery: true
+        ledgerQuery: true
+        eventSource: true
+  abc:
+#    policies:
+#      discovery:
+#        retryOpts:
+#          attempts: 4
+#          initialBackoff: 1s
+#      eventService:
+#        resolverStrategy: PreferOrg
+#        balancer: RoundRobin
+#        blockHeightLagThreshold: 2
+#        reconnectBlockHeightLagThreshold: 5
+#        peerMonitorPeriod: 3s
+
+
+    #channels:
+    #  mychannel:
+    peers:
+      peer0:
+        endorsingPeer: true
+        chaincodeQuery: true
+        ledgerQuery: true
+        eventSource: true
+      peer1:
+        endorsingPeer: true
+        chaincodeQuery: true
+        ledgerQuery: true
+        eventSource: true
+#      peer2:
+#        endorsingPeer: true
+#        chaincodeQuery: true
+#        ledgerQuery: true
+#        eventSource: true
+    policies:
+      queryChannelConfig:
+        minResponses: 1
+        maxTargets: 4
+        retryOpts:
+          attempts: 5
+          initialBackoff: 500ms
+          maxBackoff: 5s
+          backoffFactor: 2.0
+# 网络中的参与org
+# 1、用于管理、获取用户证书
+# 2、指明peer属于哪个组织
+# 3、发送proposal时获取构建request所需的必要数据
+organizations:
+  ShuQinOrgOne:
+    mspid: ShuQinOrgOne
+    cryptoPath: /root/projectMod/apiserver/artifacts/shuqin/crypto-config/peerOrganizations/shuqinorgone.com/users/{username}@shuqinorgone.com/msp
+
+
+#    users:
+#      User900:
+#        key:
+#          pem: |
+#            -----BEGIN PRIVATE KEY-----
+#            MIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQgBcyb5nk9VAFTLWq1
+#            Q2alhm1fQxMy2UbSP9trXIYUfgKhRANCAAQu651DId8Ueto62BqfFqMRM1Wq1FbV
+#            LV/tX6p9B4xhSnwJCs1h0+hF8Oom+oUJ+jH2UqNzug30Kgb+RebtNFUF
+#            -----END PRIVATE KEY-----
+#
+#
+#        cert:
+#          pem: |
+#            -----BEGIN CERTIFICATE-----
+#            MIIDITCCAsegAwIBAgIUO5ORBmDW+g0CEG1xub997KdYxAkwCgYIKoZIzj0EAwIw
+#            czELMAkGA1UEBhMCVVMxEzARBgNVBAgTCkNhbGlmb3JuaWExFjAUBgNVBAcTDVNh
+#            biBGcmFuY2lzY28xGTAXBgNVBAoTEHNodXFpbm9yZ29uZS5jb20xHDAaBgNVBAMT
+#            E2NhLnNodXFpbm9yZ29uZS5jb20wHhcNMTkwODIzMDIyODAwWhcNMTkwODIzMDIz
+#            OTAwWjCBkTELMAkGA1UEBhMCVVMxFzAVBgNVBAgTDk5vcnRoIENhcm9saW5hMRQw
+#            EgYDVQQKEwtIeXBlcmxlZGdlcjEwMA0GA1UECxMGY2xpZW50MAoGA1UECxMDY29t
+#            MBMGA1UECxMMc2h1cWlub3Jnb25lMSEwHwYDVQQDDBhVc2VyMjAwQHNodXFpbm9y
+#            Z29uZS5jb20wWTATBgcqhkjOPQIBBggqhkjOPQMBBwNCAAQu651DId8Ueto62Bqf
+#            FqMRM1Wq1FbVLV/tX6p9B4xhSnwJCs1h0+hF8Oom+oUJ+jH2UqNzug30Kgb+Rebt
+#            NFUFo4IBGDCCARQwDgYDVR0PAQH/BAQDAgeAMAwGA1UdEwEB/wQCMAAwHQYDVR0O
+#            BBYEFJEZoLS7Ma34aAK7jG9vUR8USohnMCsGA1UdIwQkMCKAIMbpsWrk1DWWf9Ic
+#            dack7XEZHtWPxoQ+6TwU2JomOov/MBsGA1UdEQQUMBKCEHNodXFpbm9yZ29uZS5j
+#            b20wgYoGCCoDBAUGBwgBBH57ImF0dHJzIjp7ImhmLkFmZmlsaWF0aW9uIjoiY29t
+#            LnNodXFpbm9yZ29uZSIsImhmLkVucm9sbG1lbnRJRCI6IlVzZXIyMDBAc2h1cWlu
+#            b3Jnb25lLmNvbSIsImhmLlR5cGUiOiJjbGllbnQiLCJyb2xlIjoiYWRtaW4ifX0w
+#            CgYIKoZIzj0EAwIDSAAwRQIhANXgtcRBp6tI0wJqZ4QaLbOjwsepKLmHgGkuRECu
+#            o5n2AiB2iV3p+t8aCid20dVZFAFAz2821+B6qx4GiusYZJcZFQ==
+#            -----END CERTIFICATE-----
+
+
+
+    peers:
+      - peer0
+      - peer1
+#    certificateAuthorities:
+#      - ca.org1
+  ShuQinOrgTwo:
+    mspid: ShuQinOrgTwo
+    cryptoPath: /root/projectMod/apiserver/artifacts/shuqin/crypto-config/peerOrganizations/shuqinorgtwo.com/users/{username}@shuqinorgtwo.com/msp
+
+
+  ShuQinOrderer:
+    mspID: ShuQinOrderer
+    cryptoPath: /root/projectMod/apiserver/artifacts/shuqin/crypto-config/ordererOrganizations/shuqinorderer.com/users/Admin@shuqinorderer.com/msp
+
+# transaction发送的目标order
+# 1、用于创建、升级channel
+# 2、发送交易的目标order
+
+orderers:
+  orderer0:
+    url: grpcs://192.168.4.172:7050
+    grpcOptions:
+      ssl-target-name-override: orderer0.shuqinorderer.com
+      keep-alive-time: 5s
+      keep-alive-timeout: 6s
+      keep-alive-permit: false
+      fail-fast: true
+      allow-insecure: false
+    tlsCACerts:
+      path: /root/projectMod/apiserver/artifacts/shuqin/crypto-config/ordererOrganizations/shuqinorderer.com/orderers/orderer0.shuqinorderer.com/msp/tlscacerts/tlsca.shuqinorderer.com-cert.pem
+
+  orderer1:
+    url: grpcs://192.168.4.173:11050
+    grpcOptions:
+      ssl-target-name-override: orderer1.shuqinorderer.com
+      keep-alive-time: 5s
+      keep-alive-timeout: 6s
+      keep-alive-permit: false
+      fail-fast: true
+      allow-insecure: false
+    tlsCACerts:
+      path: /root/projectMod/apiserver/artifacts/shuqin/crypto-config/ordererOrganizations/shuqinorderer.com/orderers/orderer1.shuqinorderer.com/msp/tlscacerts/tlsca.shuqinorderer.com-cert.pem
+
+  orderer2:
+    url: grpcs://192.168.4.174:8050
+    grpcOptions:
+      ssl-target-name-override: orderer2.shuqinorderer.com
+      keep-alive-time: 5s
+      keep-alive-timeout: 6s
+      keep-alive-permit: false
+      fail-fast: true
+      allow-insecure: false
+    tlsCACerts:
+      path: /root/projectMod/apiserver/artifacts/shuqin/crypto-config/ordererOrganizations/shuqinorderer.com/orderers/orderer2.shuqinorderer.com/msp/tlscacerts/tlsca.shuqinorderer.com-cert.pem
+
+
+# transaction发送的目标peer
+# 1、包括endorsement、query、event listener注册
+peers:
+  peer0:
+    url: grpcs://192.168.4.180:7051
+    grpcOptions:
+      ssl-target-name-override: peer0.shuqinorgone.com
+      allow-insecure: false
+    tlsCACerts:
+      path: /root/projectMod/apiserver/artifacts/shuqin/crypto-config/peerOrganizations/shuqinorgone.com/tlsca/tlsca.shuqinorgone.com-cert.pem
+
+  peer1:
+    url: grpcs://192.168.4.172:8051
+    grpcOptions:
+      ssl-target-name-override: peer1.shuqinorgone.com
+      allow-insecure: false
+    tlsCACerts:
+      path: /root/projectMod/apiserver/artifacts/shuqin/crypto-config/peerOrganizations/shuqinorgone.com/tlsca/tlsca.shuqinorgone.com-cert.pem
+# dynamic discovery service 域名替换
+entityMatchers:
+  peer:
+    - pattern: (\w*)peer0.shuqinorgone.com(\w*)
+      urlSubstitutionExp: 192.168.4.180:7051
+      eventUrlSubstitutionExp: 192.168.4.180:7051
+      sslTargetOverrideUrlSubstitutionExp: peer0.shuqinorgone.com
+      mappedHost: peer0.shuqinorgone.com
+
+    - pattern: (\w*)peer1.shuqinorgone.com(\w*)
+      urlSubstitutionExp: 192.168.4.172:8051
+      eventUrlSubstitutionExp: 192.168.4.172:8051
+      sslTargetOverrideUrlSubstitutionExp: peer1.shuqinorgone.com
+      mappedHost: peer1.shuqinorgone.com
+
+    - pattern: (\w*)peer2.shuqinorgone.com(\w*)
+      urlSubstitutionExp: 192.168.4.173:11051
+      eventUrlSubstitutionExp: 192.168.4.173:11051
+      sslTargetOverrideUrlSubstitutionExp: peer2.shuqinorgone.com
+      mappedHost: peer2.shuqinorgone.com
+
+  orderer:
+  - pattern: (\w*)orderer0.shuqinorderer.com(\w*)
+    urlSubstitutionExp: 192.168.4.172:7050
+    sslTargetOverrideUrlSubstitutionExp: orderer0.shuqinorderer.com
+    mappedHost: orderer0.shuqinorderer.com
+
+  - pattern: (\w*)orderer1.shuqinorderer.com(\w*)
+    urlSubstitutionExp: 192.168.4.173:11050
+    sslTargetOverrideUrlSubstitutionExp: orderer1.shuqinorderer.com
+    mappedHost: orderer1.shuqinorderer.com
+
+  - pattern: (\w*)orderer2.shuqinorderer.com(\w*)
+    urlSubstitutionExp: 192.168.4.174:8050
+    sslTargetOverrideUrlSubstitutionExp: orderer2.shuqinorderer.com
+    mappedHost: orderer2.shuqinorderer.com
+
+#  certificateAuthority:
+#    - pattern: (\w*)ca.org1(\w*)
+#      urlSubstitutionExp:
+#      mappedHost: ca.org1

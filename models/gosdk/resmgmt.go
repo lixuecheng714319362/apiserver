@@ -13,6 +13,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/common/cauthdsl"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
+	"github.com/hyperledger/fabric/common/tools/configtxgen/localconfig"
 	"github.com/pkg/errors"
 	"io"
 )
@@ -38,9 +39,13 @@ type ResmgmtRequest struct {
 	TargetPeers   []string //default 安装全部peer
 
 	//Channel 请求内容
-	OrgNameList   []string
-	SingerMap     map[string]string   //MSP 对应制定用户
+	AddOrgList 	[]string			//动态添加组织，待添加列表
+	AddOrgConfig []localconfig.Organization
+	OrgNameList   []string			//orgName 在系统通道中组织的字段
+	//MSP 签名组织对应制定用户  key为签名组织在sdk配置文件中的org标示，value为组织用户的User名
+	SignerMap     map[string]string
 	ChannelTxPath string
+
 	//Chain Code请求配置
 	CCPath           string
 	CCGoPath         string
@@ -73,7 +78,21 @@ func GetResMgmtClient(request *ResmgmtRequest) (ResClient *ResmgmtClient, err er
 		AdminClient,
 	}, nil
 }
+// 创建通道,不通过channel TxPath
+func (ResmgmtClient *ResmgmtClient) UpdateChannel(request *ResmgmtRequest ,reader io.Reader) ( resmgmt.SaveChannelResponse, error) {
+	var err error
+	var signer []msp.SigningIdentity
 
+	if signer, err = utils.GetCreateChannelSinger(request.SignerMap, ResmgmtClient.SDK); err != nil {
+		return resmgmt.SaveChannelResponse{}, err
+	}
+	saveChannelReq := resmgmt.SaveChannelRequest{
+		ChannelID:         request.ChannelID,
+		ChannelConfig:     reader,
+		SigningIdentities: signer,
+	}
+	return ResmgmtClient.Client.SaveChannel(saveChannelReq, resmgmt.WithOrdererEndpoint(request.TargetOrderer))
+}
 // 创建通道,不通过channel TxPath
 func (ResmgmtClient *ResmgmtClient) CreateNewChannel(request *ResmgmtRequest) ( resmgmt.SaveChannelResponse, error) {
 
@@ -86,7 +105,7 @@ func (ResmgmtClient *ResmgmtClient) CreateNewChannel(request *ResmgmtRequest) ( 
 		if reader, err = GetCreateChannelReader(request.ChannelID, request.OrgNameList); err != nil {
 			return resmgmt.SaveChannelResponse{}, err
 		}
-		if signer, err = GetCreateChannelSinger(request.SingerMap, ResmgmtClient.SDK); err != nil {
+		if signer, err = utils.GetCreateChannelSinger(request.SignerMap, ResmgmtClient.SDK); err != nil {
 			return resmgmt.SaveChannelResponse{}, err
 		}
 		saveChannelReq = resmgmt.SaveChannelRequest{
