@@ -7,7 +7,7 @@ client:
   logging:
     level: info
   cryptoconfig:
-    path: /root/projectMod/apiserver/artifacts/shuqin/crypto-config
+    path: /data/test-network/multi-5host/crypto-config
   credentialStore:
     path: /tmp/sdk/O1P0-service-store
     cryptoStore:
@@ -18,13 +18,13 @@ client:
       default:
         provider: "SW"
       hashAlgorithm: "SHA2"
-      softVerify: true https://www.showdoc.cc/611133378323845?page_id=3590670572913538
+      softVerify: true 
       level: 256
   tlsCerts:
     systemCertPool: true
     client:
-      keyfile: /root/projectMod/apiserver/artifacts/shuqin/crypto-config/peerOrganizations/shuqinorgone.com/users/Admin@shuqinorgone.com/tls/client.key
-      certfile: /root/projectMod/apiserver/artifacts/shuqin/crypto-config/peerOrganizations/shuqinorgone.com/users/Admin@shuqinorgone.com/tls/client.crt
+      keyfile: /data/test-network/multi-5host/crypto-config/peerOrganizations/shuqinorgone.com/users/Admin@shuqinorgone.com/tls/client.key
+      certfile: /data/test-network/multi-5host/crypto-config/peerOrganizations/shuqinorgone.com/users/Admin@shuqinorgone.com/tls/client.crt
 # 用于构建channel client
 # 1、创建channel客户端实例
 # 2、权限控制
@@ -107,7 +107,7 @@ channels:
 organizations:
   ShuQinOrgOne:
     mspid: ShuQinOrgOne
-    cryptoPath: /root/projectMod/apiserver/artifacts/shuqin/crypto-config/peerOrganizations/shuqinorgone.com/users/{username}@shuqinorgone.com/msp
+    cryptoPath: /data/test-network/multi-5host/crypto-config/peerOrganizations/shuqinorgone.com/users/{username}@shuqinorgone.com/msp
 
 
 #    users:
@@ -152,12 +152,16 @@ organizations:
 #      - ca.org1
   ShuQinOrgTwo:
     mspid: ShuQinOrgTwo
-    cryptoPath: /root/projectMod/apiserver/artifacts/shuqin/crypto-config/peerOrganizations/shuqinorgtwo.com/users/{username}@shuqinorgtwo.com/msp
+    cryptoPath: /data/test-network/multi-5host/crypto-config/peerOrganizations/shuqinorgtwo.com/users/{username}@shuqinorgtwo.com/msp
 
+
+  ShuQinOrgThree:
+    mspid: ShuQinOrgThree
+    cryptoPath: /data/test-network/multi-5host/org3-artifacts/crypto-config/peerOrganizations/shuqinorgthree.com/users/{username}@shuqinorgthree.com/msp
 
   ShuQinOrderer:
     mspID: ShuQinOrderer
-    cryptoPath: /root/projectMod/apiserver/artifacts/shuqin/crypto-config/ordererOrganizations/shuqinorderer.com/users/Admin@shuqinorderer.com/msp
+    cryptoPath: /data/test-network/multi-5host/crypto-config/ordererOrganizations/shuqinorderer.com/users/Admin@shuqinorderer.com/msp
 
 # transaction发送的目标order
 # 1、用于创建、升级channel
@@ -174,7 +178,7 @@ orderers:
       fail-fast: true
       allow-insecure: false
     tlsCACerts:
-      path: /root/projectMod/apiserver/artifacts/shuqin/crypto-config/ordererOrganizations/shuqinorderer.com/orderers/orderer0.shuqinorderer.com/msp/tlscacerts/tlsca.shuqinorderer.com-cert.pem
+      path: /data/test-network/multi-5host/crypto-config/ordererOrganizations/shuqinorderer.com/orderers/orderer0.shuqinorderer.com/msp/tlscacerts/tlsca.shuqinorderer.com-cert.pem
 
   orderer1:
     url: grpcs://192.168.4.173:11050
@@ -186,7 +190,7 @@ orderers:
       fail-fast: true
       allow-insecure: false
     tlsCACerts:
-      path: /root/projectMod/apiserver/artifacts/shuqin/crypto-config/ordererOrganizations/shuqinorderer.com/orderers/orderer1.shuqinorderer.com/msp/tlscacerts/tlsca.shuqinorderer.com-cert.pem
+      path: /data/test-network/multi-5host/crypto-config/ordererOrganizations/shuqinorderer.com/orderers/orderer1.shuqinorderer.com/msp/tlscacerts/tlsca.shuqinorderer.com-cert.pem
 
   orderer2:
     url: grpcs://192.168.4.174:8050
@@ -198,7 +202,7 @@ orderers:
       fail-fast: true
       allow-insecure: false
     tlsCACerts:
-      path: /root/projectMod/apiserver/artifacts/shuqin/crypto-config/ordererOrganizations/shuqinorderer.com/orderers/orderer2.shuqinorderer.com/msp/tlscacerts/tlsca.shuqinorderer.com-cert.pem
+      path: /data/test-network/multi-5host/crypto-config/ordererOrganizations/shuqinorderer.com/orderers/orderer2.shuqinorderer.com/msp/tlscacerts/tlsca.shuqinorderer.com-cert.pem
 
 
 # transaction发送的目标peer
@@ -210,7 +214,7 @@ peers:
       ssl-target-name-override: peer0.shuqinorgone.com
       allow-insecure: false
     tlsCACerts:
-      path: /root/projectMod/apiserver/artifacts/shuqin/crypto-config/peerOrganizations/shuqinorgone.com/tlsca/tlsca.shuqinorgone.com-cert.pem
+      path: /data/test-network/multi-5host/crypto-config/peerOrganizations/shuqinorgone.com/tlsca/tlsca.shuqinorgone.com-cert.pem
 
   peer1:
     url: grpcs://192.168.4.172:8051
@@ -218,7 +222,7 @@ peers:
       ssl-target-name-override: peer1.shuqinorgone.com
       allow-insecure: false
     tlsCACerts:
-      path: /root/projectMod/apiserver/artifacts/shuqin/crypto-config/peerOrganizations/shuqinorgone.com/tlsca/tlsca.shuqinorgone.com-cert.pem
+      path: /data/test-network/multi-5host/crypto-config/peerOrganizations/shuqinorgone.com/tlsca/tlsca.shuqinorgone.com-cert.pem
 # dynamic discovery service 域名替换
 entityMatchers:
   peer:
