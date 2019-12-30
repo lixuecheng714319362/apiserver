@@ -89,6 +89,19 @@ func ChangeArgs(Args []string) (arg [][]byte) {
 	}
 	return arg
 }
+
+func ChangeTransientMap(t map[string]string) map[string][]byte{
+	if t==nil{
+		return  nil
+	}
+	r:=make(map[string][]byte)
+	for t, v := range t {
+		r[t]=[]byte(v)
+	}
+	return r
+}
+
+
 var LogLevel string
 func HanddlerError(c beego.Controller) {
 	if LogLevel=="debug"{

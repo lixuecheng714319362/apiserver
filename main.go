@@ -10,13 +10,14 @@ import (
 
 
 func main() {
-	logSet()
-	filter.Init()
-	beego.Run()
-}
+	       logSet()
+	       filter.Init()
+	       beego.Run()
+	}
 
 
 func logSet()  {
+
 	tool.LogLevel=beego.AppConfig.String("loglevel")
 	switch tool.LogLevel {
 	case "error":

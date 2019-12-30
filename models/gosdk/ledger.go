@@ -5,6 +5,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
+	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 )
 
 type LedgerClient struct {
@@ -20,10 +21,11 @@ type LedgerClient struct {
 
 type LedgerRequest struct {
 	ConfigPath  string
-	ChannelID   string
 	UserName    string //组织用户名
 	OrgName     string //组织在sdk配置文件中的标识
-	BlockHash   []byte
+
+	ChannelID   string
+	BlockHash   string
 	TxID        string
 	BlockNumber uint64
 	Start       uint64
@@ -76,6 +78,10 @@ func (LedgerClient *LedgerClient) QueryBlockByNumber(number uint64) (*common.Blo
 	return LedgerClient.Client.QueryBlock(number)
 }
 
+//
+func (LedgerClient *LedgerClient) QueryTransactionByTxID(txId string) (*peer.ProcessedTransaction, error) {
+	return LedgerClient.Client.QueryTransaction(fab.TransactionID(txId))
+}
 // 关闭SDK
 func (LedgerClient *LedgerClient) CloseSDK() {
 	LedgerClient.SDK.Close()

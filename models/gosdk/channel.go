@@ -15,48 +15,64 @@ type ChannelClient struct {
 	Client *channel.Client
 }
 
+type ChannelRequest struct {
+	ConfigPath  string
+	UserName    string
+
+	ChannelID   string
+	CCID        string
+	Fcn         string //OrdID
+	Args        []string
+	TargetPeers []string
+	TransientMap map[string]string
+
+}
+
 // 创建通道客户端
-func GetChannelClient(configPath, userName, channelID string) (*ChannelClient, error) {
-	SDK, err := InitializeSDK(configPath)
+func GetChannelClient(channelRequest *ChannelRequest) (*ChannelClient, error) {
+	SDK, err := InitializeSDK(channelRequest.ConfigPath)
 	if err != nil {
 		return nil, err
 	}
-	client, err := channel.New(SDK.ChannelContext(channelID, fabsdk.WithUser(userName)))
+	client, err := channel.New(SDK.ChannelContext(channelRequest.ChannelID, fabsdk.WithUser(channelRequest.UserName),))
 	if err != nil {
 		SDK.Close()
 		return nil, err
 	}
 	return &ChannelClient{
-		configPath,
-		userName,
-		channelID,
+		channelRequest.ConfigPath,
+		channelRequest.UserName,
+		channelRequest.ChannelID,
 		SDK,
 		client,
 	}, nil
 }
 
-func (ChannelClient *ChannelClient) Query(chainCodeID, Fcn string, args [][]byte) (channel.Response, error) {
+func (ChannelClient *ChannelClient) Query(channelRequest *ChannelRequest, args [][]byte,transientMap map[string][]byte) (channel.Response, error) {
 	//TODO
 	//TransientMap、InvocationChain功能
 	return ChannelClient.Client.Query(
 		channel.Request{
-			ChaincodeID: chainCodeID,
-			Fcn:         Fcn,
+			ChaincodeID: channelRequest.CCID,
+			Fcn:         channelRequest.Fcn,
 			Args:        args,
+			TransientMap: transientMap,
 		},
+		channel.WithTargetEndpoints(channelRequest.TargetPeers...),
 	)
 }
 
-func (ChannelClient *ChannelClient) Invoke(chainCodeID, Fcn string, args [][]byte) (channel.Response, error) {
+func (ChannelClient *ChannelClient) Invoke(channelRequest *ChannelRequest, args [][]byte,transientMap map[string][]byte) (channel.Response, error) {
 	//TODO
 	//TransientMap、InvocationChain功能
 	return ChannelClient.Client.Execute(
 		channel.Request{
-			ChaincodeID: chainCodeID,
-			Fcn:         Fcn,
+			ChaincodeID: channelRequest.CCID,
+			Fcn:         channelRequest.Fcn,
 			Args:        args,
+			TransientMap: transientMap,
 		},
-		//channel.WithTargetEndpoints(targetPeers...),
+		channel.WithTargetEndpoints(channelRequest.TargetPeers...),
 	)
 }
 

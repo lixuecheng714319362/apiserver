@@ -13,6 +13,7 @@ type CcController struct {
 	beego.Controller
 }
 
+
 func (c *CcController) InstallChainCode() {
 	defer tool.HanddlerError(c.Controller)
 	req,err:=getReq(c)
@@ -114,7 +115,7 @@ func (c *CcController) QueryInstallChainCode() {
 		tool.BackResError(c.Controller, http.StatusBadRequest, err.Error())
 		return
 	}
-	beego.Info("query  installed cc success",)
+	beego.Info("query  installed cc success")
 	tool.BackResData(c.Controller, res)
 	return
 }
@@ -147,10 +148,14 @@ func (c *CcController) QueryInstantiateChainCode() {
 
 func getReq(c *CcController) (*gosdk.ResmgmtRequest,error)  {
 	data := c.Ctx.Input.RequestBody
+	beego.Debug("request data is ",string(data))
 	//测试接口使用
 	if filter.IsFilterVerify =="false"{
 		r:=&gosdk.ResmgmtRequest{}
-		_=json.Unmarshal(data,r)
+		if err:=json.Unmarshal(data,r);err!=nil{
+			return nil,err
+		}
+		gosdk.ChangeResmgmtRequetSingleConfig(r)
 		return r,nil
 	}
 	req := &filter.ValidateRequest{}
@@ -160,6 +165,6 @@ func getReq(c *CcController) (*gosdk.ResmgmtRequest,error)  {
 	}
 	reqData :=&gosdk.ResmgmtRequest{}
 	err=json.Unmarshal([]byte(req.Data), reqData)
+	gosdk.ChangeResmgmtRequetSingleConfig(reqData)
 	return reqData,nil
 }
-

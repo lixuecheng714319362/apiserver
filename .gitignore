@@ -16,14 +16,11 @@
 .vscode
 #test
 apiserver
-chaincode/*
+chaincode/
 main
 artifacts/
 test/
 conf/config/
-controllers/test/
-apiserverv1.1
-models/gosdk/tool/CARevoke/
 *_test.go
-models/gosdk/tool/discovery/
 bin/
+

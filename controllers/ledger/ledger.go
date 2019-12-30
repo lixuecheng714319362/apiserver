@@ -5,15 +5,25 @@ import (
 	"apiserver/filter"
 	"apiserver/models/gosdk"
 	"apiserver/models/gosdk/tool/blockdata"
-	"encoding/base64"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"github.com/astaxie/beego"
+	"github.com/golang/protobuf/proto"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/msp"
+	"github.com/hyperledger/fabric/common/tools/protolator"
+	_ "github.com/hyperledger/fabric/protos/common"
 	"net/http"
+	"reflect"
 	"sync"
 	"time"
+	//cb "github.com/hyperledger/fabric/protos/common" // Import these to register the proto types
+	_ "github.com/hyperledger/fabric/protos/msp"
+	_ "github.com/hyperledger/fabric/protos/orderer"
+	_ "github.com/hyperledger/fabric/protos/orderer/etcdraft"
+	_ "github.com/hyperledger/fabric/protos/peer"
 )
 
 type LedgerController struct {
@@ -22,7 +32,7 @@ type LedgerController struct {
 
 func (c *LedgerController) QueryInfo() {
 	defer tool.HanddlerError(c.Controller)
-	req,err:=getReq(c)
+	req, err := getReq(c)
 	if err != nil {
 		beego.Error("request json unmarshal failed ", err)
 		tool.BackResError(c.Controller, http.StatusForbidden, err.Error())
@@ -41,8 +51,8 @@ func (c *LedgerController) QueryInfo() {
 		tool.BackResError(c.Controller, http.StatusBadRequest, err.Error())
 		return
 	}
-	beego.Info("query channel info  status:",res.Status,"block:",
-		res.BCI.Height, "current block hash:",base64.StdEncoding.EncodeToString(res.BCI.CurrentBlockHash))
+	beego.Info("query channel info  status:",res.Status,", block height:", res.BCI.Height,", current block hash:",
+		 hex.EncodeToString(res.BCI.CurrentBlockHash))
 	tool.BackResData(c.Controller, res.BCI)
 	return
 }
@@ -58,7 +68,7 @@ type ChannelConfig struct {
 
 func (c *LedgerController) QueryConfig() {
 	defer tool.HanddlerError(c.Controller)
-	req,err:=getReq(c)
+	req, err := getReq(c)
 	if err != nil {
 		beego.Error("request json unmarshal failed ", err)
 		tool.BackResError(c.Controller, http.StatusForbidden, err.Error())
@@ -85,14 +95,14 @@ func (c *LedgerController) QueryConfig() {
 		MSPs:        res.MSPs(),
 		AnchorPeers: res.AnchorPeers(),
 	}
-	beego.Info("query channel config","channel id is ",res.ID())
+	beego.Info("query channel config", "channel id is ", res.ID())
 	tool.BackResData(c.Controller, channelcfg)
 	return
 }
 
 func (c *LedgerController) QueryBlockByHash() {
 	defer tool.HanddlerError(c.Controller)
-	req,err:=getReq(c)
+	req, err := getReq(c)
 	if err != nil {
 		beego.Error("request json unmarshal failed ", err)
 		tool.BackResError(c.Controller, http.StatusForbidden, err.Error())
@@ -105,26 +115,33 @@ func (c *LedgerController) QueryBlockByHash() {
 		return
 	}
 	defer LedgerClient.CloseSDK()
-	res, err := LedgerClient.QueryBlockByHash(req.BlockHash)
+	blockHash, err := hex.DecodeString(req.BlockHash)
+	if err != nil {
+		beego.Error("block hash hex decode err", err)
+		tool.BackResError(c.Controller, http.StatusBadRequest, err.Error())
+		return
+	}
+	res, err := LedgerClient.QueryBlockByHash(blockHash)
 	if err != nil {
 		beego.Error("query ledger info err", err)
 		tool.BackResError(c.Controller, http.StatusBadRequest, err.Error())
 		return
 	}
+
 	b, err := Getinfo(res)
 	if err != nil {
 		beego.Error("get block info err", err)
 		tool.BackResError(c.Controller, http.StatusBadRequest, err.Error())
 		return
 	}
-	b.CurrentBlockHash = req.BlockHash
+	beego.Info("query block by hash ,block hash  is", req.BlockHash)
 	tool.BackResData(c.Controller, b)
 	return
 }
 
 func (c *LedgerController) QueryBlockByTxID() {
 	defer tool.HanddlerError(c.Controller)
-	req,err:=getReq(c)
+	req, err := getReq(c)
 	if err != nil {
 		beego.Error("request json unmarshal failed ", err)
 		tool.BackResError(c.Controller, http.StatusForbidden, err.Error())
@@ -149,20 +166,14 @@ func (c *LedgerController) QueryBlockByTxID() {
 		tool.BackResError(c.Controller, http.StatusBadRequest, err.Error())
 		return
 	}
-	hash, err := getBlockHashBynumber(LedgerClient, b.Number)
-	if err != nil {
-		beego.Error("get current hash failed ", err)
-		tool.BackResError(c.Controller, http.StatusBadRequest, err.Error())
-		return
-	}
-	b.CurrentBlockHash = hash
+	beego.Info("query block info by  txid  ,txid is", req.TxID)
 	tool.BackResData(c.Controller, b)
 	return
 }
 
 func (c *LedgerController) QueryBlockByNumber() {
 	defer tool.HanddlerError(c.Controller)
-	req,err:=getReq(c)
+	req, err := getReq(c)
 	if err != nil {
 		beego.Error("request json unmarshal failed ", err)
 		tool.BackResError(c.Controller, http.StatusForbidden, err.Error())
@@ -187,22 +198,15 @@ func (c *LedgerController) QueryBlockByNumber() {
 		tool.BackResError(c.Controller, http.StatusBadRequest, err.Error())
 		return
 	}
-	beego.Info("query block info ,block number is",res.Header.Number)
-	hash, err := getBlockHashBynumber(LedgerClient, req.BlockNumber)
-	if err != nil {
-		beego.Error("get current hash failed ", err)
-		tool.BackResError(c.Controller, http.StatusBadRequest, err.Error())
-		return
-	}
-	b.CurrentBlockHash = hash
+	beego.Info("query block info ,block number is", req.BlockNumber)
 	tool.BackResData(c.Controller, b)
 	return
 }
 
 func (c *LedgerController) QueryBlockByRange() {
-	beego.Debug("start queryblockrange",time.Now().Unix())
+	beego.Debug("start queryblockrange", time.Now().Unix())
 	defer tool.HanddlerError(c.Controller)
-	req,err:=getReq(c)
+	req, err := getReq(c)
 	if err != nil {
 		beego.Error("request json unmarshal failed ", err)
 		tool.BackResError(c.Controller, http.StatusForbidden, err.Error())
@@ -216,109 +220,22 @@ func (c *LedgerController) QueryBlockByRange() {
 	}
 	defer LedgerClient.CloseSDK()
 
-	res,err:=getBlockbyRange(req.Start,req.End,LedgerClient)
+	res, err := getBlockbyRangeGO(req.Start, req.End, LedgerClient)
 	if err != nil {
 		beego.Error("get block by range failed ", err)
 		tool.BackResError(c.Controller, http.StatusBadRequest, err.Error())
 		return
 	}
-
-	beego.Info("query block range  from",req.Start,"to",req.End)
+	beego.Info("query block range  from", req.Start, "to", req.End)
 	tool.BackResData(c.Controller, res)
-	beego.Debug("end queryblockrange",time.Now().Unix())
+	beego.Debug("end queryblockrange", time.Now().Unix())
 	return
 }
 
-func getReq(c *LedgerController) (*gosdk.LedgerRequest,error)  {
-	data := c.Ctx.Input.RequestBody
-	//测试接口使用
-	if filter.IsFilterVerify =="false"{
-		r:=&gosdk.LedgerRequest{}
-		_=json.Unmarshal(data,r)
-		return r,nil
-	}
-	req := &filter.ValidateRequest{}
-	err := json.Unmarshal(data, req)
-	if err != nil {
-		return nil,err
-	}
-	reqData :=&gosdk.LedgerRequest{}
-	err=json.Unmarshal([]byte(req.Data), reqData)
-	return reqData,nil
-}
 
-func getBlockbyRange(start uint64,end uint64,LedgerClient *gosdk.LedgerClient)([]*Block,error){
-	beego.Debug("start getblockrange",time.Now().Unix())
-	var res =make([]*Block,end-start+1)
-	var wg sync.WaitGroup
-	//异步获取所有区块
-	flag := true
-	for i := start; i <= end; i++ {
-		wg.Add(1)
-		go func(i uint64) {
-			for k:=0;;k++ {
-				b, err := LedgerClient.QueryBlockByNumber(i)
-				if err!=nil{
-					if k>3{
-						flag=false
-						break
-					}else {
-						continue
-					}
-				}
-				block, err := Getinfo(b)
-				if err != nil {
-					flag=false
-					break
-				}
-				res[i-start]=block
-				break
-			}
-			wg.Done()
-		}(i)
-	}
-	wg.Wait()
-	if flag==false{
-		return nil,errors.New("get block error")
-	}
-	hash, err := getBlockHashBynumber(LedgerClient, end)
-	if err != nil {
-		return nil,err
-	}
-	for k, v := range res {
-		if k==int(end-start){
-			v.CurrentBlockHash=hash
-		}else {
-			v.CurrentBlockHash=res[k+1].PreviousHash
-		}
-	}
-	res[end-start].CurrentBlockHash = hash
-	beego.Debug("end getblockrange",time.Now().Unix())
-	return res,err
-}
-
-
-func getBlockHashBynumber(client *gosdk.LedgerClient, number uint64) ([]byte, error) {
-	info, err := client.QueryInfo()
-	if err != nil {
-		return nil, err
-	}
-	if info.BCI.Height-1 == number {
-		return info.BCI.CurrentBlockHash, nil
-	} else if info.BCI.Height-2 == number {
-		return info.BCI.PreviousBlockHash, nil
-	}
-	b, err := client.QueryBlockByNumber(number + 1)
-	if err != nil {
-		return nil, err
-	}
-	return b.Header.PreviousHash, nil
-}
-
-
-func (c *LedgerController) QueryBlockByNumbertest() {
+func (c *LedgerController) QueryBlockByNumberTest() {
 	defer tool.HanddlerError(c.Controller)
-	req,err:=getReq(c)
+	req, err := getReq(c)
 	if err != nil {
 		beego.Error("request json unmarshal failed ", err)
 		tool.BackResError(c.Controller, http.StatusForbidden, err.Error())
@@ -338,23 +255,22 @@ func (c *LedgerController) QueryBlockByNumbertest() {
 		return
 	}
 
-
-	//// 将或取的区块信息全部解析成json字符串
-	// TODO 必须注册所有引用的proto包参见configtxlator代码
-	//bt,err:=proto.Marshal(res)
-	//if err != nil {
-	//	fmt.Println("marshal error " ,err)
-	//}
-	//msgType:=proto.MessageType("common.Block")
-	//msg := reflect.New(msgType.Elem()).Interface().(proto.Message)
-	//err =proto.Unmarshal(bt,msg)
-	//if err != nil {
-	//	fmt.Println("Unmarshal  error",err)
-	//}
-	//err = protolator.DeepMarshalJSON(c.Controller.Ctx.ResponseWriter, msg)
-	//if err != nil {
-	//	fmt.Println("Deep Marshal Json error",err)
-	//}
+	// 将或取的区块信息全部解析成json字符串
+	//TODO 必须注册所有引用的proto包参见configtxlator代码
+	bt, err := proto.Marshal(res)
+	if err != nil {
+		fmt.Println("marshal error ", err)
+	}
+	msgType := proto.MessageType("common.Block")
+	msg := reflect.New(msgType.Elem()).Interface().(proto.Message)
+	err = proto.Unmarshal(bt, msg)
+	if err != nil {
+		fmt.Println("Unmarshal  error", err)
+	}
+	err = protolator.DeepMarshalJSON(c.Controller.Ctx.ResponseWriter, msg)
+	if err != nil {
+		fmt.Println("Deep Marshal Json error", err)
+	}
 
 	b, err := blockdata.Getinfo(res)
 	if err != nil {
@@ -362,14 +278,93 @@ func (c *LedgerController) QueryBlockByNumbertest() {
 		tool.BackResError(c.Controller, http.StatusBadRequest, err.Error())
 		return
 	}
-	beego.Info("query block info ,block number is",res.Header.Number)
-	hash, err := getBlockHashBynumber(LedgerClient, req.BlockNumber)
-	if err != nil {
-		beego.Error("get current hash failed ", err)
-		tool.BackResError(c.Controller, http.StatusBadRequest, err.Error())
-		return
-	}
-	b.Header.CurrentBlockHash = hash
+	beego.Info("query block test ,block number is", res.Header.Number)
 	tool.BackResData(c.Controller, b)
 	return
+}
+
+func getReq(c *LedgerController) (*gosdk.LedgerRequest, error) {
+	data := c.Ctx.Input.RequestBody
+	beego.Debug("request data is ", string(data))
+	//测试接口使用
+	if filter.IsFilterVerify == "false" {
+		r := &gosdk.LedgerRequest{}
+		if err := json.Unmarshal(data, r); err != nil {
+			return nil, err
+		}
+		gosdk.ChangeLedgerRequestSingleConfig(r)
+		return r, nil
+	}
+	req := &filter.ValidateRequest{}
+	err := json.Unmarshal(data, req)
+	if err != nil {
+		return nil, err
+	}
+	reqData := &gosdk.LedgerRequest{}
+	err = json.Unmarshal([]byte(req.Data), reqData)
+	gosdk.ChangeLedgerRequestSingleConfig(reqData)
+	return reqData, nil
+}
+
+func getBlockbyRangeGO(start uint64, end uint64, LedgerClient *gosdk.LedgerClient) ([]*Block, error) {
+	beego.Debug("start get block range with goroutine", time.Now().Unix())
+	var res = make([]*Block, end-start+1)
+	var wg sync.WaitGroup
+	//异步获取所有区块
+	flag := true
+	for i := start; i <= end; i++ {
+		wg.Add(1)
+		go func(i uint64) {
+			for k := 0; ; k++ {
+				b, err := LedgerClient.QueryBlockByNumber(i)
+				if err != nil {
+					if k > 3 {
+						flag = false
+						break
+					} else {
+						continue
+					}
+				}
+				block, err := Getinfo(b)
+				if err != nil {
+					flag = false
+					break
+				}
+				res[i-start] = block
+				break
+			}
+			wg.Done()
+		}(i)
+	}
+	wg.Wait()
+	if flag == false {
+		return nil, errors.New("get block error")
+	}
+	beego.Debug("end getblockrange", time.Now().Unix())
+	return res, nil
+}
+
+func getBlockbyRange(start uint64, end uint64, LedgerClient *gosdk.LedgerClient) ([]*Block, error) {
+	beego.Debug("start getblockrange", time.Now().Unix())
+	var res = make([]*Block, end-start+1)
+	for i := start; i <= end; i++ {
+		for k := 0; ; k++ {
+			b, err := LedgerClient.QueryBlockByNumber(i)
+			if err != nil {
+				if k > 3 {
+					break
+				} else {
+					continue
+				}
+			}
+			block, err := Getinfo(b)
+			if err!=nil{
+				return nil ,errors.New("get block info error")
+			}
+			res[i-start] = block
+			break
+		}
+	}
+	beego.Debug("end getblockrange", time.Now().Unix())
+	return res, nil
 }
