@@ -3,6 +3,7 @@ package gosdk
 import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/ledger"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fab/resource"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
@@ -85,4 +86,32 @@ func (LedgerClient *LedgerClient) QueryTransactionByTxID(txId string) (*peer.Pro
 // 关闭SDK
 func (LedgerClient *LedgerClient) CloseSDK() {
 	LedgerClient.SDK.Close()
+}
+
+
+//获取指定channel的配置信息
+func GetOldChannelConfig(configPath, orgName,userName ,channelID string,targetPeers []string)(*common.Config,error) {
+	cl,err:= GetLedgerClient(&LedgerRequest{
+		ConfigPath:configPath,
+		OrgName:orgName,
+		UserName:userName,
+		ChannelID:channelID,
+	})
+	if err != nil {
+		return nil,err
+	}
+	defer cl.CloseSDK()
+	config,err:=cl.Client.QueryConfig(ledger.WithTargetEndpoints(targetPeers...))
+	if err != nil {
+		return nil,err
+	}
+	block,err:=cl.Client.QueryBlock(config.BlockNumber(),ledger.WithTargetEndpoints(targetPeers...))
+	if err != nil {
+		return nil,err
+	}
+	configEnv, err := resource.CreateConfigEnvelope(block.Data.Data[0])
+	if err != nil {
+		return nil,err
+	}
+	return configEnv.Config,nil
 }

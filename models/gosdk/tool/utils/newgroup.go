@@ -1,21 +1,14 @@
-package gosdk
+package utils
 
 import (
-	utils2 "apiserver/models/gosdk/tool/utils"
-	"github.com/golang/protobuf/proto"
-	"github.com/hyperledger/fabric-sdk-go/pkg/client/ledger"
-	"github.com/hyperledger/fabric-sdk-go/pkg/fab/resource"
-	cb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 	"github.com/hyperledger/fabric/common/cauthdsl"
 	"github.com/hyperledger/fabric/common/channelconfig"
 	"github.com/hyperledger/fabric/common/policies"
 	"github.com/hyperledger/fabric/common/tools/configtxgen/localconfig"
-	"github.com/hyperledger/fabric/common/tools/configtxlator/update"
 	"github.com/hyperledger/fabric/msp"
 	"github.com/hyperledger/fabric/protos/common"
 	"github.com/hyperledger/fabric/protos/utils"
 	"github.com/pkg/errors"
-	"io"
 )
 
 const (
@@ -83,67 +76,6 @@ const (
 	// type Member to be used as the admin principal default
 	MemberRoleAdminPrincipal = "Role.MEMBER"
 )
-
-//通过configtxlator update模块生成
-func GetAddOrgChannelConfigUpdate(request *ResmgmtRequest)(io.Reader,error){
-	config,err:=GetOldChannelConfig(request.ConfigPath,request.OrgName,request.UserName,request.ChannelID,request.TargetPeers)
-	if err != nil {
-		return nil ,err
-	}
-	configByte,err:=proto.Marshal(config)
-	if err != nil {
-		return nil,err
-	}
-	newConfig:=&common.Config{}
-	oldConfig:=&common.Config{}
-	err=proto.Unmarshal(configByte,newConfig)
-	if err != nil {
-		return nil,err
-	}
-	err=proto.Unmarshal(configByte,oldConfig)
-	if err != nil {
-		return nil,err
-	}
-	for _, v := range request.AddOrgConfig {
-		newOrg,err:=NewOrgGroup(&v)
-		if err != nil {
-			return nil,err
-		}
-		newConfig.ChannelGroup.Groups["Application"].Groups[v.Name]=newOrg
-	}
-	configUpdate,err:=update.Compute(oldConfig,newConfig)
-	if err != nil {
-		return nil,err
-	}
-	configUpdate.ChannelId=request.ChannelID
-	return  utils2.CreateConfigUpdateEnvelope(configUpdate.ChannelId,configUpdate)
-
-}
-func GetOldChannelConfig(configPath, orgName,userName ,channelID string,targetPeers []string)(*cb.Config,error) {
-	cl,err:= GetLedgerClient(&LedgerRequest{
-		ConfigPath:configPath,
-		OrgName:orgName,
-		UserName:userName,
-		ChannelID:channelID,
-	})
-	if err != nil {
-		return nil,err
-	}
-	defer cl.CloseSDK()
-	config,err:=cl.Client.QueryConfig(ledger.WithTargetEndpoints(targetPeers...))
-	if err != nil {
-		return nil,err
-	}
-	block,err:=cl.Client.QueryBlock(config.BlockNumber(),ledger.WithTargetEndpoints(targetPeers...))
-	if err != nil {
-		return nil,err
-	}
-	configEnv, err := resource.CreateConfigEnvelope(block.Data.Data[0])
-	if err != nil {
-		return nil,err
-	}
-	return configEnv.Config,nil
-}
 
 func NewOrgGroup(conf *localconfig.Organization)(*common.ConfigGroup,error){
 	mspConfig, err := msp.GetVerifyingMspConfig(conf.MSPDir, conf.ID, conf.MSPType)

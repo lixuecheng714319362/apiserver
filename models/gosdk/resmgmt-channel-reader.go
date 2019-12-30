@@ -4,6 +4,8 @@ import (
 	"apiserver/models/gosdk/tool/utils"
 	"encoding/json"
 	"errors"
+	"github.com/golang/protobuf/proto"
+	"github.com/hyperledger/fabric/common/tools/configtxlator/update"
 	"github.com/hyperledger/fabric/protos/common"
 	"io"
 )
@@ -27,4 +29,41 @@ func GetCreateChannelReader(channelID string, OrgNameList []string)(io.Reader,er
 		return nil,errors.New("org name list is nil" )
 	}
 	return utils.CreateConfigUpdateEnvelope(channelID,configUpdate)
+}
+
+
+//通过configtxlator update模块生成
+func GetAddOrgChannelConfigUpdate(request *ResmgmtRequest)(io.Reader,error){
+	config,err:=GetOldChannelConfig(request.ConfigPath,request.OrgName,request.UserName,request.ChannelID,request.TargetPeers)
+	if err != nil {
+		return nil ,err
+	}
+	configByte,err:=proto.Marshal(config)
+	if err != nil {
+		return nil,err
+	}
+	newConfig:=&common.Config{}
+	oldConfig:=&common.Config{}
+	err=proto.Unmarshal(configByte,newConfig)
+	if err != nil {
+		return nil,err
+	}
+	err=proto.Unmarshal(configByte,oldConfig)
+	if err != nil {
+		return nil,err
+	}
+	for _, v := range request.AddOrgConfig {
+		newOrg,err:= utils.NewOrgGroup(&v)
+		if err != nil {
+			return nil,err
+		}
+		newConfig.ChannelGroup.Groups["Application"].Groups[v.Name]=newOrg
+	}
+	configUpdate,err:=update.Compute(oldConfig,newConfig)
+	if err != nil {
+		return nil,err
+	}
+	configUpdate.ChannelId=request.ChannelID
+	return  utils.CreateConfigUpdateEnvelope(configUpdate.ChannelId,configUpdate)
+
 }
