@@ -134,10 +134,10 @@ github.com/hyperledger/fabric/protos/common
 github.com/hyperledger/fabric/protos/msp
 github.com/hyperledger/fabric/protos/orderer
 github.com/hyperledger/fabric/protos/orderer/etcdraft
-github.com/hyperledger/fabric/common/tools/configtxgen/localconfig
 github.com/hyperledger/fabric/common/cauthdsl
 github.com/hyperledger/fabric/common/channelconfig
 github.com/hyperledger/fabric/common/policies
+github.com/hyperledger/fabric/common/tools/configtxgen/localconfig
 github.com/hyperledger/fabric/common/tools/configtxlator/update
 github.com/hyperledger/fabric/msp
 github.com/hyperledger/fabric/protos/utils
@@ -151,12 +151,12 @@ github.com/hyperledger/fabric/core/comm
 github.com/hyperledger/fabric/protos/ledger/queryresult
 github.com/hyperledger/fabric/protos/token
 github.com/hyperledger/fabric/common/flogging
-github.com/hyperledger/fabric/common/viperutil
-github.com/hyperledger/fabric/core/config
 github.com/hyperledger/fabric/bccsp
 github.com/hyperledger/fabric/common/capabilities
 github.com/hyperledger/fabric/common/configtx
 github.com/hyperledger/fabric/msp/cache
+github.com/hyperledger/fabric/common/viperutil
+github.com/hyperledger/fabric/core/config
 github.com/hyperledger/fabric/bccsp/idemix
 github.com/hyperledger/fabric/bccsp/signer
 github.com/hyperledger/fabric/bccsp/sw

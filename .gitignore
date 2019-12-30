@@ -19,7 +19,7 @@ apiserver
 chaincode/
 main
 artifacts/
-test/
+
 conf/config/
 *_test.go
 bin/
