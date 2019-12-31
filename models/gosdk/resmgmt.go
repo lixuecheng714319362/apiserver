@@ -39,7 +39,9 @@ type ResmgmtRequest struct {
 	TargetPeers   []string //default 安装全部peer
 
 	//Channel 请求内容
-	AddOrgList 	[]string			//动态添加组织，待添加列表
+	//AddOrgList 	[]string			//动态添加组织，待添加列表
+	CRL 			[]string
+	DeleteOrgList 	[]string
 	AddOrgConfig []localconfig.Organization
 	OrgNameList   []string			//orgName 在系统通道中组织的字段
 	//MSP 签名组织对应制定用户  key为签名组织在sdk配置文件中的org标示，value为组织用户的User名

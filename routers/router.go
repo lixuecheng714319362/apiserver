@@ -40,7 +40,8 @@ func init() {
 
 					beego.NSNamespace("/update",
 						beego.NSRouter("/add-org", &channel.ChanController{}, "post:AddOrgUpdateChannel"),
-
+						beego.NSRouter("/delete-org", &channel.ChanController{}, "post:DeleteOrgUpdateChannel"),
+						beego.NSRouter("/revoke", &channel.ChanController{}, "post:RevokeUpdateChannel"),
 						),
 
 

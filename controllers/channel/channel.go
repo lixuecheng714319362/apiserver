@@ -35,7 +35,7 @@ func (c *ChanController) CreateChannel() {
 		tool.BackResError(c.Controller, http.StatusBadRequest, err.Error())
 		return
 	}
-	beego.Info("join channel successed", res.TransactionID)
+	beego.Info("create channel success", res.TransactionID)
 	tool.BackResData(c.Controller, res)
 	return
 }
@@ -62,7 +62,7 @@ func (c *ChanController) CreateNewChannel() {
 		tool.BackResError(c.Controller, http.StatusBadRequest, err.Error())
 		return
 	}
-	beego.Info("join channel successed", res.TransactionID)
+	beego.Info("create new channel success", res.TransactionID)
 	tool.BackResData(c.Controller, res)
 	return
 }
@@ -76,7 +76,7 @@ func (c *ChanController) AddOrgUpdateChannel() {
 		return
 	}
 
-	reader ,err:= gosdk.GetAddOrgChannelConfigUpdate(req)
+	reader ,err:= gosdk.GetAddOrgChannelConfigUpdateReader(req)
 	if err != nil {
 		beego.Error("get  add org channel config update reader failed", err)
 		tool.BackResError(c.Controller, http.StatusBadRequest, err.Error())
@@ -99,8 +99,72 @@ func (c *ChanController) AddOrgUpdateChannel() {
 	tool.BackResData(c.Controller, res)
 	return
 }
+//根据组织信息将新组织添加到channel中
+func (c *ChanController) RevokeUpdateChannel() {
+	defer tool.HanddlerError(c.Controller)
+	req, err := getReq(c)
+	if err != nil {
+		beego.Error("request json unmarshal failed ", err)
+		tool.BackResError(c.Controller, http.StatusForbidden, err.Error())
+		return
+	}
 
+	reader ,err:= gosdk.GetRevokeReader(req)
+	if err != nil {
+		beego.Error("get  revoke cert channel config update reader failed", err)
+		tool.BackResError(c.Controller, http.StatusBadRequest, err.Error())
+		return
+	}
+	ResClient, err := gosdk.GetResMgmtClient(req)
+	if err != nil {
+		beego.Error("create resClient failed ", err)
+		tool.BackResError(c.Controller, http.StatusBadRequest, err.Error())
+		return
+	}
+	defer ResClient.CloseSDK()
+	res, err := ResClient.UpdateChannel(req,reader)
+	if err != nil || res.TransactionID == "" {
+		beego.Error("update channel failed  ", err)
+		tool.BackResError(c.Controller, http.StatusBadRequest, err.Error())
+		return
+	}
+	beego.Info("revoke cert update channel success", res.TransactionID)
+	tool.BackResData(c.Controller, res)
+	return
+}
+//根据组织信息将新组织添加到channel中
+func (c *ChanController) DeleteOrgUpdateChannel() {
+	defer tool.HanddlerError(c.Controller)
+	req, err := getReq(c)
+	if err != nil {
+		beego.Error("request json unmarshal failed ", err)
+		tool.BackResError(c.Controller, http.StatusForbidden, err.Error())
+		return
+	}
 
+	reader ,err:= gosdk.GetDeleteOrgChannelConfigUpdateReader(req)
+	if err != nil {
+		beego.Error("get  delete org channel config update reader failed", err)
+		tool.BackResError(c.Controller, http.StatusBadRequest, err.Error())
+		return
+	}
+	ResClient, err := gosdk.GetResMgmtClient(req)
+	if err != nil {
+		beego.Error("create resClient failed ", err)
+		tool.BackResError(c.Controller, http.StatusBadRequest, err.Error())
+		return
+	}
+	defer ResClient.CloseSDK()
+	res, err := ResClient.UpdateChannel(req,reader)
+	if err != nil || res.TransactionID == "" {
+		beego.Error("update channel failed  ", err)
+		tool.BackResError(c.Controller, http.StatusBadRequest, err.Error())
+		return
+	}
+	beego.Info("delete org update channel success", res.TransactionID)
+	tool.BackResData(c.Controller, res)
+	return
+}
 
 func (c *ChanController) JoinChannel() {
 	defer tool.HanddlerError(c.Controller)

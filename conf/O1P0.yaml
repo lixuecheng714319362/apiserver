@@ -29,7 +29,7 @@ client:
 # 1、创建channel客户端实例
 # 2、权限控制
 # 3、获取channel配置
-# ps：用户channel，若是static discovery service模式，则来这找channel、order、endorser
+# ps：指定channelid的请求，除了create和join其他都要配置该项，用户channel，若是static discovery service模式，则来这找channel、order、endorser
 
 channels:
   mychannel:
@@ -59,7 +59,7 @@ channels:
         chaincodeQuery: true
         ledgerQuery: true
         eventSource: true
-  abc:
+  testchannel9:
 #    policies:
 #      discovery:
 #        retryOpts:
